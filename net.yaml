@@ -1,0 +1,10 @@
+switch:
+  - name: sw1
+
+namespace:
+  - name: ns1
+    connected: sw1
+
+  - name: ns2
+    connected: sw1
+
