@@ -21,7 +21,8 @@ struct Switch {
 #[derive(Debug, Serialize, Deserialize)]
 struct Namespace {
     name: String,
-    connected: String
+    connected: String,
+    ip: String
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -65,6 +66,15 @@ fn run_net(c: Config) {
 
     for ns in c.namespace {
         println!("Switch: {}", ns.name);
-        let _ = Command::new("foot").args(["vdens", &format!("vde:///{path}/{}", ns.connected)]).spawn();
+        let _ = Command::new("foot").args(["vdens", &format!("vde:///{path}/{}", ns.connected), "./configurator.sh", &ns.name]).spawn();
+
+        dbg!("HERE");
+
+
+        let res = fs::write(&format!("{path}/sconf_{}", ns.name), format!("ip a a {} dev vde0\nip l set vde0 up\n", ns.ip).as_bytes());
+        match res {
+            Ok(_) => println!("File created"),
+            Err(e) => eprintln!("{e}")
+        };
     }
 }

@@ -4,6 +4,8 @@ switch:
 namespace:
   - name: ns1
     connected: sw1
+    ip: 10.0.0.1/24
 
   - name: ns2
     connected: sw1
+    ip: 10.0.0.2/24
