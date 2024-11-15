@@ -53,15 +53,18 @@ fn run_net(c: Config) {
     dbg!(&c);
 
 
+    let path = "/tmp";
+
     for sw in c.switch {
         println!("Switch: {}", sw.name);
-        let _ = Command::new("foot").args(["vde_switch", "-s", &format!("/tmp/{}", &sw.name)]).spawn();
+        let _ = Command::new("foot").args(["vde_switch", "-s", &format!("/{path}/{}", &sw.name)]).spawn();
     }
 
-    thread::sleep(time::Duration::new(5, 0));
+    // Should check for socket, not wait :)
+    thread::sleep(time::Duration::new(1, 0));
 
     for ns in c.namespace {
         println!("Switch: {}", ns.name);
-        let _ = Command::new("foot").args(["vdens", "vde:///tmp/sw1"]).spawn();
+        let _ = Command::new("foot").args(["vdens", &format!("vde:///{path}/{}", ns.connected)]).spawn();
     }
 }

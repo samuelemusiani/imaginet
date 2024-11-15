@@ -7,4 +7,3 @@ namespace:
 
   - name: ns2
     connected: sw1
-
