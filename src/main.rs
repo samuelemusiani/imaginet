@@ -54,11 +54,17 @@ fn run_net(c: Config) {
     dbg!(&c);
 
 
-    let path = "/tmp";
+    let path = "/tmp/rsnet";
+    if fs::exists(&path).unwrap() {
+        fs::remove_dir_all(&path).unwrap();
+    }
+    fs::create_dir(&path).unwrap();
+
+    fs::copy("./configurator.sh", &format!("{path}/configurator.sh")).unwrap();
 
     for sw in c.switch {
         println!("Switch: {}", sw.name);
-        let _ = Command::new("foot").args(["vde_switch", "-s", &format!("/{path}/{}", &sw.name)]).spawn();
+        let _ = Command::new("foot").args(["vde_switch", "-s", &format!("{path}/{}", &sw.name)]).spawn();
     }
 
     // Should check for socket, not wait :)
@@ -66,7 +72,7 @@ fn run_net(c: Config) {
 
     for ns in c.namespace {
         println!("Switch: {}", ns.name);
-        let _ = Command::new("foot").args(["vdens", &format!("vde:///{path}/{}", ns.connected), "./configurator.sh", &ns.name]).spawn();
+        let _ = Command::new("foot").args(["vdens", &format!("vde:///{path}/{}", ns.connected), &format!("{path}/configurator.sh"), &format!("{path}/sconf_{}", ns.name)]).spawn();
 
         dbg!("HERE");
 
