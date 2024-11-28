@@ -2,7 +2,6 @@ use clap::Parser;
 use core::time;
 use std::{fs, process, thread};
 use serde::{Serialize, Deserialize};
-use std::process::Command;
 
 /// ImagiNet
 #[derive(Parser, Debug)]
@@ -15,7 +14,8 @@ struct Args {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Switch {
-    name: String
+    name: String,
+    vdeterm: bool
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -64,7 +64,21 @@ fn run_net(c: Config) {
 
     for sw in c.switch {
         println!("Switch: {}", sw.name);
-        let _ = Command::new("foot").args(["vde_switch", "-s", &format!("{path}/{}", &sw.name)]).spawn();
+
+        let mgmt_path = format!("{path}/{}_mgmt", &sw.name);
+
+        let _ = process::Command::new("foot").args(["vde_switch", 
+            "--sock", &format!("{path}/{}", &sw.name), 
+            "--mgmt", &mgmt_path, 
+            "-d"])
+            .spawn();
+
+        
+        thread::sleep(time::Duration::new(1, 0));
+
+        if sw.vdeterm {
+            let _ = process::Command::new("foot").args(["vdeterm", &mgmt_path]).spawn().expect("Can't spwan vdeterm for switch");
+        }
     }
 
     // Should check for socket, not wait :)
@@ -72,7 +86,7 @@ fn run_net(c: Config) {
 
     for ns in c.namespace {
         println!("Switch: {}", ns.name);
-        let _ = Command::new("foot").args(["vdens", &format!("vde:///{path}/{}", ns.connected), &format!("{path}/configurator.sh"), &format!("{path}/sconf_{}", ns.name)]).spawn();
+        let _ = process::Command::new("foot").args(["vdens", &format!("vde:///{path}/{}", ns.connected), &format!("{path}/configurator.sh"), &format!("{path}/sconf_{}", ns.name)]).spawn();
 
         dbg!("HERE");
 
