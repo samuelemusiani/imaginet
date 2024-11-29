@@ -27,9 +27,17 @@ struct Namespace {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+struct Connection {
+    name: String,
+    a: String,
+    b: String
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 struct Config {
     switch: Vec<Switch>,
-    namespace: Vec<Namespace>
+    namespace: Vec<Namespace>,
+    connections: Vec<Connection>
 }
 
 fn main() {
@@ -105,11 +113,17 @@ fn run_net(c: Config) {
 
         dbg!("HERE");
 
-
         let res = fs::write(&format!("{path}/sconf_{}", ns.name), format!("ip a a {} dev vde0\nip l set vde0 up\n", ns.ip).as_bytes());
         match res {
             Ok(_) => println!("File created"),
             Err(e) => eprintln!("{e}")
         };
+
+        thread::sleep(time::Duration::new(1, 0));
+    }
+
+    for conn in c.connections {
+        let _ = process::Command::new("vde_plug")
+            .args([&format!("{path}/{}", conn.a), &format!("{path}/{}", conn.b)]).spawn();
     }
 }

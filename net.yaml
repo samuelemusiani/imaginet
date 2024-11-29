@@ -3,6 +3,9 @@ switch:
     vdeterm: true
     config: ./sw1.conf
 
+  - name: sw2
+    vdeterm: true
+
 namespace:
   - name: ns1
     connected: sw1
@@ -12,3 +15,15 @@ namespace:
     connected: sw1
     ip: 10.0.0.2/24
 
+  - name: ns3
+    connected: sw2
+    ip: 192.168.1.1/24
+
+  - name: ns4
+    connected: sw1
+    ip: 192.168.1.2/24
+
+connections:
+  - name: conn1
+    a:  sw1
+    b:  sw2
