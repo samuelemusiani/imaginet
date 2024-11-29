@@ -1,6 +1,6 @@
 use clap::Parser;
 use core::time;
-use std::{fs, process, thread};
+use std::{fs, process, thread, path::Path};
 use serde::{Serialize, Deserialize};
 
 /// ImagiNet
@@ -15,7 +15,8 @@ struct Args {
 #[derive(Debug, Serialize, Deserialize)]
 struct Switch {
     name: String,
-    vdeterm: bool
+    vdeterm: bool,
+    config: Option<String>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -67,10 +68,24 @@ fn run_net(c: Config) {
 
         let mgmt_path = format!("{path}/{}_mgmt", &sw.name);
 
-        let _ = process::Command::new("foot").args(["vde_switch", 
-            "--sock", &format!("{path}/{}", &sw.name), 
+
+        let sw_sock = format!("{path}/{}", &sw.name);
+        let mut args = vec!("vde_switch", 
+            "--sock", &sw_sock, 
             "--mgmt", &mgmt_path, 
-            "-d"])
+            "-d");
+
+        let sw_conf;
+        if let Some(config_path) = sw.config {
+            fs::copy(config_path, &format!("{path}/{}.conf", sw.name))
+                .expect("Cannot find config file for switch");
+
+            args.push("--rcfile");
+            sw_conf = format!("{path}/{}.conf", &sw.name);
+            args.push(&sw_conf);
+        };
+
+        let _ = process::Command::new("foot").args(args)
             .spawn();
 
         
