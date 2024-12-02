@@ -30,7 +30,8 @@ struct Namespace {
 struct Connection {
     name: String,
     a: String,
-    b: String
+    b: String,
+    wirefilter: Option<bool>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -123,7 +124,27 @@ fn run_net(c: Config) {
     }
 
     for conn in c.connections {
-        let _ = process::Command::new("vde_plug")
-            .args([&format!("{path}/{}", conn.a), &format!("{path}/{}", conn.b)]).spawn();
+        let cp1 = format!("{path}/{}", conn.a);
+        let cp2 = format!("{path}/{}", conn.b);
+
+        let mut args = vec!("vde_plug", &cp1,);
+
+        let wrp = format!("{path}/wr_{}_mng", conn.name);
+        if let Some(_) = conn.wirefilter {
+            args.append(&mut vec!("=", "wirefilter", "-M", &wrp, "="));
+        } else {
+            args.push("=");
+        }
+
+        let mut conn2 = vec!("vde_plug", &cp2);
+        args.append(&mut conn2);
+
+        let _ = process::Command::new("dpipe")
+            .args(args).spawn();
+
+        if let Some(_) = conn.wirefilter {
+            let _ = process::Command::new("foot")
+                .args(["vdeterm", &wrp]).spawn();
+        }
     }
 }
