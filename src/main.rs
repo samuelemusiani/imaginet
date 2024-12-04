@@ -25,7 +25,6 @@ fn main() {
             process::exit(1);
         }
         Ok(file) => {
-            println!("{file}");
             let c = config::Config::from_string(&file);
 
             let t = config_to_vde_topology(c);

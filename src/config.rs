@@ -3,7 +3,6 @@ use serde::{Serialize, Deserialize};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Switch {
     pub name: String,
-    pub vdeterm: bool,
     pub config: Option<String>
 }
 
@@ -44,7 +43,6 @@ mod tests {
         let file = r#"
 switch:
     - name: "test"
-      vdeterm: true
       config: "test.conf"
 "#;
         let c = Config::from_string(file);
@@ -52,7 +50,6 @@ switch:
         assert_eq!(sws.len(), 1);
         let sw = &sws[0];
         assert_eq!(sw.name, "test");
-        assert_eq!(sw.vdeterm, true);
         assert_eq!(sw.config, Some("test.conf".to_owned()));
     }
 }

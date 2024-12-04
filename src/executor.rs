@@ -1,10 +1,53 @@
-//use std::{fs, process, thread};
+use std::{fs, path::PathBuf, process, thread};
 //use core::time;
+
+const WORKING_DIR: &str = "/tmp/rsnet";
+const TERMINAL: &str = "foot";
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 pub fn start(t: crate::vde::Topology) -> Result<()>{
-    todo!();
+    init()?;
+
+    for sw in t.get_switches() {
+        let cmd = sw.exec_command();
+        let args = sw.exec_args(WORKING_DIR);
+
+        init_dir(sw.base_path(WORKING_DIR))?;
+
+        exec(&cmd, args).unwrap();
+    }
+
+    Ok(())
+}
+
+fn init() -> Result<()> {
+    if fs::exists(&WORKING_DIR)? {
+        // Should check if a pid file is present
+        fs::remove_dir_all(&WORKING_DIR)?;
+    }
+    fs::create_dir(&WORKING_DIR)?;
+
+    Ok(())
+}
+
+fn init_dir(path: String) -> Result<()> {
+    if fs::exists(&path)? {
+        fs::remove_dir_all(&path)?;
+    }
+    fs::create_dir(&path)?;
+
+    Ok(())
+}
+
+fn exec(cmd: &str, args: Vec<String>) -> Result<()> {
+
+    dbg!("Command: ", &cmd);
+    dbg!("Args: ", &args);
+
+    process::Command::new("vde_switch").args(args).spawn()?;
+
+    Ok(())
 }
 
 //#[allow(dead_code)]

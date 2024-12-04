@@ -1,10 +1,8 @@
 switch:
   - name: sw1
-    vdeterm: true
     # config: ./sw1.conf
 
   - name: sw2
-    vdeterm: true
 
 # namespace:
 #   - name: ns1

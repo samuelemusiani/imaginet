@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{fmt::format, path::PathBuf};
 use super::{MGMT_FILE_NAME, PID_FILE_NAME, SOCK_FILE_NAME};
 
 /// This is the internal rappresentation of a switch
@@ -19,23 +19,38 @@ impl Switch {
 
     /// Get base path of all the files related to the switch given
     /// the global base path
-    pub fn base_path(&self, base: PathBuf) -> PathBuf {
-        base.join(&self.name)
+    pub fn base_path(&self, base: &str) -> String {
+        PathBuf::from(base).join(&self.name).to_str().unwrap().to_owned()
     }
 
     /// Get the path of the pid file of the switch given the global base path
-    pub fn pid_path(&self, base: PathBuf) -> PathBuf {
-        self.base_path(base).join(PID_FILE_NAME)
+    pub fn pid_path(&self, base: &str) -> String {
+        PathBuf::from(self.base_path(base)).join(PID_FILE_NAME).to_str().unwrap().to_owned()
     }
 
     /// Get the path of the management file of the switch given the global base path
-    pub fn mgmt_path(&self, base: PathBuf) -> PathBuf {
-        self.base_path(base).join(MGMT_FILE_NAME)
+    pub fn mgmt_path(&self, base: &str) -> String {
+        PathBuf::from(self.base_path(base)).join(MGMT_FILE_NAME).to_str().unwrap().to_owned()
     }
 
     /// Get the path of the socket file of the switch given the global base path
-    pub fn sock_path(&self, base: PathBuf) -> PathBuf {
-        self.base_path(base).join(SOCK_FILE_NAME)
+    pub fn sock_path(&self, base: &str) -> String {
+        PathBuf::from(self.base_path(base)).join(SOCK_FILE_NAME).to_str().unwrap().to_owned()
+    }
+
+    pub fn exec_command(&self) -> String {
+        String::from("vde_switch")
+    }
+
+    pub fn exec_args(&self, base: &str) -> Vec<String> {
+        let pid_p = self.pid_path(base);
+        let mgmt_p = self.mgmt_path(base);
+        let sock_p = self.sock_path(base);
+
+        vec!["--pidfile".to_owned(), pid_p, 
+            "--mgmt".to_owned(), mgmt_p, 
+            "--sock".to_owned(), sock_p, 
+            "-d".to_owned()]
     }
 }
 
