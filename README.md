@@ -18,6 +18,13 @@ lsns --output-all -t user
 sudo nsenter --preserve-credentials --net -t $PID
 ```
 
+Si può entrare...
+```bash
+vdens /tmp/sw1
+echo $$ # To get id
+nsenter -t $PID --preserve-credentials -U -n --keep-caps
+```
+
 ## Configurare switch/router con file
 
 Dove trovo un esempio di configurazione? Uguale ai comandi che dai (in teoria)
