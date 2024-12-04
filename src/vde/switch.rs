@@ -70,35 +70,35 @@ mod tests {
     fn switch_base_path() {
         let name = "lara";
         let sw = Switch::new(name.to_owned());
-        let base = PathBuf::from("/tmp");
+        let base = "/tmp";
 
-        assert_eq!(sw.base_path(base), PathBuf::from("/tmp/lara"));
+        assert_eq!(sw.base_path(base), String::from("/tmp/lara"));
     }
 
     #[test]
     fn switch_pid_path() {
         let name = "maasldkf";
         let sw = Switch::new(name.to_owned());
-        let base = PathBuf::from("/tmp");
+        let base = "/tmp";
 
-        assert_eq!(sw.pid_path(base), PathBuf::from("/tmp/maasldkf/pid"));
+        assert_eq!(sw.pid_path(base), String::from("/tmp/maasldkf/pid"));
     }
 
     #[test]
     fn switch_mgmt_path() {
         let name = "sdfk3i";
         let sw = Switch::new(name.to_owned());
-        let base = PathBuf::from("/tmp");
+        let base = "/tmp";
 
-        assert_eq!(sw.mgmt_path(base), PathBuf::from("/tmp/sdfk3i/mgmt"));
+        assert_eq!(sw.mgmt_path(base), String::from("/tmp/sdfk3i/mgmt"));
     }
 
     #[test]
     fn switch_sock_path() {
         let name = "sw-13ndo28";
         let sw = Switch::new(name.to_owned());
-        let base = PathBuf::from("/tmp");
+        let base = "/tmp";
 
-        assert_eq!(sw.sock_path(base), PathBuf::from("/tmp/sw-13ndo28/sock"));
+        assert_eq!(sw.sock_path(base), String::from("/tmp/sw-13ndo28/sock"));
     }
 }
