@@ -6,41 +6,41 @@ switch:
   - name: sw2
     vdeterm: true
 
-namespace:
-  - name: ns1
-    interfaces: 
-      - name: eth0
-        endpoint: sw1
-        # port:  2
-        # If port is specified i should use vde_plug
-        ip: 10.0.0.1/24
-
-      - name: eth1
-        endpoint: sw2
-        ip: 10.0.0.2/24
-        #ips:
-        #  - 10.0.0.1/24
-    commands:
-      -
-      - 
-      -
-      -
-    script: ....
-
-  - name: ns2
-    connected: sw2
-    ip: 10.0.0.2/24
-
-  # - name: ns3
-  #   connected: sw2
-  #   ip: 192.168.1.1/24
-  #
-  # - name: ns4
-  #   connected: sw1
-  #   ip: 192.168.1.2/24
-
-connections:
-  - name: conn1
-    a:  sw1
-    b:  sw2
-    wirefilter: true
+# namespace:
+#   - name: ns1
+#     interfaces: 
+#       - name: eth0
+#         endpoint: sw1
+#         # port:  2
+#         # If port is specified i should use vde_plug
+#         ip: 10.0.0.1/24
+#
+#       - name: eth1
+#         endpoint: sw2
+#         ip: 10.0.0.2/24
+#         #ips:
+#         #  - 10.0.0.1/24
+#     commands:
+#       -
+#       - 
+#       -
+#       -
+#     script: ....
+#
+#   - name: ns2
+#     connected: sw2
+#     ip: 10.0.0.2/24
+#
+#   # - name: ns3
+#   #   connected: sw2
+#   #   ip: 192.168.1.1/24
+#   #
+#   # - name: ns4
+#   #   connected: sw1
+#   #   ip: 192.168.1.2/24
+#
+# connections:
+#   - name: conn1
+#     a:  sw1
+#     b:  sw2
+#     wirefilter: true
