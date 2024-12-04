@@ -24,8 +24,35 @@ pub struct Connection {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
-    pub switch: Vec<Switch>,
-    pub namespace: Vec<Namespace>,
-    pub connections: Vec<Connection>
+    pub switch: Option<Vec<Switch>>,
+    pub namespace: Option<Vec<Namespace>>,
+    pub connections: Option<Vec<Connection>>
 }
 
+impl Config {
+    pub fn from_string(file: &str) -> Config {
+        serde_yaml::from_str(&file).unwrap()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn create_config() {
+        let file = r#"
+switch:
+    - name: "test"
+      vdeterm: true
+      config: "test.conf"
+"#;
+        let c = Config::from_string(file);
+        let sws = c.switch.unwrap();
+        assert_eq!(sws.len(), 1);
+        let sw = &sws[0];
+        assert_eq!(sw.name, "test");
+        assert_eq!(sw.vdeterm, true);
+        assert_eq!(sw.config, Some("test.conf".to_owned()));
+    }
+}

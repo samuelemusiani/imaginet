@@ -26,10 +26,24 @@ fn main() {
         }
         Ok(file) => {
             println!("{file}");
-            let c: config::Config = serde_yaml::from_str(&file).unwrap();
+            let c = config::Config::from_string(&file);
 
-            executor::run_net(c);
+            let t = config_to_vde_topology(c);
+
+            executor::start(t).unwrap();
         }
     } 
 }
 
+fn config_to_vde_topology(c: config::Config) -> vde::Topology {
+    let mut t = vde::Topology::new();
+
+    if let Some(sws) = c.switch {
+        for sw in sws {
+            let s = vde::Switch::new(sw.name);
+            t.add_switch(s);
+        }
+    }
+
+    return t;
+}
