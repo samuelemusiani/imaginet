@@ -1,5 +1,11 @@
 # ImagiNet
 
+Main:
+    - Config: Parsing del yaml. Controlli vari ed eventuali + errori
+    - VDE: Modulo responsabile di generare effettivamente la rete.
+        Lo divido in moduli per ogni componente di vde e faccio in modo
+        che sia generale la possibilità di generare la rete
+
 # Dubbi
 
 ## Configurare vdens
@@ -37,3 +43,5 @@ rsnet exec -> Eseguire un comanod in uno switch/router con il socket di
 Aggiungere quello che manda: router, cavi, vdeplug vari ed eventuali
 
 Fare in modo che tutto possa essere configurabile da file (+ inline?)
+
+Si può collegare alla porta 10 dello switch con 'vde:///tmp/sw1[10]'

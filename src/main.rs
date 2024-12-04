@@ -1,7 +1,9 @@
 use clap::Parser;
 use core::time;
-use std::{fs, process, thread, path::Path};
+use std::{fs, process, thread};
 use serde::{Serialize, Deserialize};
+
+mod vde;
 
 /// ImagiNet
 #[derive(Parser, Debug)]
@@ -55,7 +57,7 @@ fn main() {
             println!("{file}");
             let c: Config = serde_yaml::from_str(&file).unwrap();
 
-            run_net(c);
+            //run_net(c);
         }
     } 
 }
@@ -139,6 +141,8 @@ fn run_net(c: Config) {
         let mut conn2 = vec!("vde_plug", &cp2);
         args.append(&mut conn2);
 
+        // Without the need of wirefilter we could probably only
+        // use vde_plug without dpipe. There is a performance hit?
         let _ = process::Command::new("dpipe")
             .args(args).spawn();
 
