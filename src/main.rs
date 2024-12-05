@@ -55,7 +55,7 @@ fn config_to_vde_topology(c: config::Config) -> vde::Topology {
             let mut n = vde::Namespace::new(ns.name.clone());
             for i in &ns.interfaces {
                 let endp = vde::calculate_endpoint_type(&t, &i.endpoint);
-                let ni = vde::NSInterface::new(i.name.clone(), i.ip.clone(), endp);
+                let ni = vde::NSInterface::new(i.name.clone(), i.ip.clone(), endp, i.port);
                 n.add_interface(ni);
             }
             t.add_namespace(n);

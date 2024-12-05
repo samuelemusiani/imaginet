@@ -10,7 +10,8 @@ pub struct NSInterface {
     ip: String,
     /// relative path to the vde endpoint. The base path is not given
     /// because it depends on the executor
-    endpoint: String
+    endpoint: String,
+    port: Option<u32>,
 }
 
 impl Namespace {
@@ -45,8 +46,12 @@ impl Namespace {
         let mut args = vec!("--multi".to_owned());
         let b = PathBuf::from(base);
         for i in &self.interfaces {
-            let p = b.join(&i.endpoint);
-            args.push(p.to_str().unwrap().to_owned());
+            let p = b.join(&i.endpoint).to_str().unwrap().to_owned();
+            if let Some(port) = i.port {
+                args.push(format!("{p}[{port}]"));
+            } else {
+                args.push(p);
+            }
         }
         args.push("--".to_owned());
         args.push(starter.to_owned());
@@ -57,11 +62,13 @@ impl Namespace {
 }
 
 impl NSInterface {
-    pub fn new(name: String, ip: String, endpoint: String) -> NSInterface {
+    pub fn new(name: String, ip: String, endpoint: String, 
+        port: Option<u32>) -> NSInterface {
         NSInterface {
             name,
             ip,
-            endpoint
+            endpoint,
+            port,
         }
     }
 
@@ -71,6 +78,14 @@ impl NSInterface {
 
     pub fn get_ip(&self) -> &String {
         &self.ip
+    }
+
+    pub fn get_endpoint(&self) -> &String {
+        &self.endpoint
+    }
+
+    pub fn get_port(&self) -> Option<u32> {
+        self.port
     }
 }
 

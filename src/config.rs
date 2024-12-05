@@ -18,7 +18,8 @@ pub struct Namespace {
 pub struct NSInterface {
     pub name: String,
     pub ip: String,
-    pub endpoint: String
+    pub endpoint: String,
+    pub port: Option<u32>
 }
 
 #[derive(Debug, Serialize, Deserialize)]

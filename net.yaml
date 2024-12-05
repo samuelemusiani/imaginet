@@ -9,7 +9,7 @@ namespace:
     interfaces: 
       - name: eth0
         endpoint: sw1
-        # port:  2
+        port:  10
         # If port is specified i should use vde_plug
         ip: 10.0.0.1/24
 
@@ -35,6 +35,7 @@ namespace:
     interfaces:
       - name: eth0
         endpoint: sw1
+        port:  20
         ip: 10.0.0.2/24
 #
 #   # - name: ns3
