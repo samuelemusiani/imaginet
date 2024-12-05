@@ -11,10 +11,16 @@ pub fn start(t: crate::vde::Topology) -> Result<()>{
     init()?;
 
     for sw in t.get_switches() {
+        init_dir(sw.base_path(WORKING_DIR))?;
+
+        if sw.needs_config() {
+            let config = sw.get_config();
+            let path = sw.config_path(WORKING_DIR);
+            fs::write(&path, config.join("\n"))?;
+        }
+
         let cmd = sw.exec_command();
         let args = sw.exec_args(WORKING_DIR);
-
-        init_dir(sw.base_path(WORKING_DIR))?;
 
         exec(&cmd, args).unwrap();
     }

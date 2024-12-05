@@ -39,7 +39,13 @@ fn config_to_vde_topology(c: config::Config) -> vde::Topology {
 
     if let Some(sws) = &c.switch {
         for sw in sws {
-            let s = vde::Switch::new(sw.name.clone());
+            let mut s = vde::Switch::new(sw.name.clone());
+
+            if let Some(config) = &sw.config {
+                let c = fs::read_to_string(config).expect("Config file not found");
+                c.lines().for_each(|l| s.add_config(l.to_owned()));
+            }
+
             t.add_switch(s);
         }
     }

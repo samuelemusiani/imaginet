@@ -6,15 +6,28 @@ use super::{MGMT_FILE_NAME, PID_FILE_NAME, SOCK_FILE_NAME};
 pub struct Switch {
     /// The name should be unique
     name: String,
+    config: Vec<String>,
 }
 
 impl Switch {
     pub fn new(name: String) -> Switch {
-        Switch { name }
+        Switch { name, config: Vec::new() }
     }
 
     pub fn get_name(&self) -> &str {
         &self.name
+    }
+
+    pub fn add_config(&mut self, config: String) {
+        self.config.push(config);
+    }
+
+    pub fn get_config(&self) -> &Vec<String> {
+        &self.config
+    }
+
+    pub fn needs_config(&self) -> bool {
+        !self.config.is_empty()
     }
 
     /// Get base path of all the files related to the switch given
@@ -38,6 +51,10 @@ impl Switch {
         PathBuf::from(self.base_path(base)).join(SOCK_FILE_NAME).to_str().unwrap().to_owned()
     }
 
+    pub fn config_path(&self, base: &str) -> String {
+        PathBuf::from(self.base_path(base)).join("config").to_str().unwrap().to_owned()
+    }
+
     pub fn exec_command(&self) -> String {
         String::from("vde_switch")
     }
@@ -46,11 +63,13 @@ impl Switch {
         let pid_p = self.pid_path(base);
         let mgmt_p = self.mgmt_path(base);
         let sock_p = self.sock_path(base);
+        let conf_p = self.config_path(base);
 
         vec!["--pidfile".to_owned(), pid_p, 
             "--mgmt".to_owned(), mgmt_p, 
-            "--sock".to_owned(), sock_p, 
-            "-d".to_owned()]
+            "--sock".to_owned(), sock_p,
+            "--rcfile".to_owned(), conf_p,
+            "--daemon".to_owned()]
     }
 }
 

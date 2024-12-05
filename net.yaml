@@ -1,8 +1,8 @@
 switch:
   - name: sw1
-    # config: ./sw1.conf
+    config: ./sw1.conf
 
-  - name: sw2
+  # - name: sw2
 
 namespace:
   - name: ns1
