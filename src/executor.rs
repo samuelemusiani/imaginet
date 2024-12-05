@@ -37,48 +37,15 @@ pub fn start(t: crate::vde::Topology) -> Result<()>{
 
         // I don't like the following part. It's too hardcoded
         for (i, el) in ns.get_interfaces().iter().enumerate() {
-            let cmd = "nsenter";
-            let base_args = vec!(
-                "-t".to_owned(), pid.clone(), 
-                "--preserve-credentials".to_owned(), 
-                "-U".to_owned(), "-n".to_owned(),
-                "--keep-caps".to_owned(),
-            );
 
-            let mut args = base_args.clone();
+            ns_exec(&pid, &format!("ip link set vde{} name {}", &i, el.get_name())).unwrap();
+            thread::sleep(std::time::Duration::from_millis(100));
 
-            args.push("ip".to_owned());
-            args.push("link".to_owned());
-            args.push("set".to_owned());
-            args.push(format!("vde{i}"));
-            args.push("name".to_owned());
-            args.push(el.get_name().to_owned());
+            ns_exec(&pid, &format!("ip addr add {} dev {}", el.get_ip(), el.get_name())).unwrap();
+            thread::sleep(std::time::Duration::from_millis(100));
 
-            exec(cmd, args).unwrap();
-            thread::sleep(std::time::Duration::new(1, 0));
-
-            let mut args = base_args.clone();
-
-            args.push("ip".to_owned());
-            args.push("address".to_owned());
-            args.push("add".to_owned());
-            args.push(el.get_ip().to_owned());
-            args.push("dev".to_owned());
-            args.push(el.get_name().to_owned());
-
-            exec(cmd, args).unwrap();
-            thread::sleep(std::time::Duration::new(1, 0));
-
-            let mut args = base_args.clone();
-
-            args.push("ip".to_owned());
-            args.push("l".to_owned());
-            args.push("set".to_owned());
-            args.push(el.get_name().to_owned());
-            args.push("up".to_owned());
-
-            exec(cmd, args).unwrap();
-            thread::sleep(std::time::Duration::new(1, 0));
+            ns_exec(&pid, &format!("ip link set {} up", el.get_name())).unwrap();
+            thread::sleep(std::time::Duration::from_millis(100));
         }
     }
 
@@ -111,6 +78,25 @@ fn exec(cmd: &str, args: Vec<String>) -> Result<()> {
 
     process::Command::new(cmd).args(args).spawn()?;
 
+    Ok(())
+}
+
+fn ns_exec(pid: &str, command: &str) -> Result<()> {
+    let cmd = "nsenter";
+    let mut base_args = vec!(
+        "-t".to_owned(), pid.to_owned(), 
+        "--preserve-credentials".to_owned(), 
+        "-U".to_owned(), "-n".to_owned(),
+        "--keep-caps".to_owned(),
+    );
+
+    let args = command.split_whitespace()
+        .map(|s| s.to_owned())
+        .collect::<Vec<String>>();
+
+    base_args.extend(args);
+
+    exec(cmd, base_args).unwrap();
     Ok(())
 }
 
