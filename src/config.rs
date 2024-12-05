@@ -9,8 +9,16 @@ pub struct Switch {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Namespace {
     pub name: String,
-    pub connected: String,
-    pub ip: String
+    pub interfaces: Vec<NSInterface>,
+    pub ip: Option<String>,
+    commands: Option<Vec<String>>
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct NSInterface {
+    pub name: String,
+    pub ip: String,
+    pub endpoint: String
 }
 
 #[derive(Debug, Serialize, Deserialize)]

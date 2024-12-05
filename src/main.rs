@@ -37,10 +37,22 @@ fn main() {
 fn config_to_vde_topology(c: config::Config) -> vde::Topology {
     let mut t = vde::Topology::new();
 
-    if let Some(sws) = c.switch {
+    if let Some(sws) = &c.switch {
         for sw in sws {
-            let s = vde::Switch::new(sw.name);
+            let s = vde::Switch::new(sw.name.clone());
             t.add_switch(s);
+        }
+    }
+
+    if let Some(nss) = &c.namespace {
+        for ns in nss {
+            let mut n = vde::Namespace::new(ns.name.clone());
+            for i in &ns.interfaces {
+                let endp = vde::calculate_endpoint_type(&t, &i.endpoint);
+                let ni = vde::NSInterface::new(i.name.clone(), i.ip.clone(), endp);
+                n.add_interface(ni);
+            }
+            t.add_namespace(n);
         }
     }
 

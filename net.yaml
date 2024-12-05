@@ -4,14 +4,20 @@ switch:
 
   - name: sw2
 
-# namespace:
-#   - name: ns1
-#     interfaces: 
-#       - name: eth0
-#         endpoint: sw1
-#         # port:  2
-#         # If port is specified i should use vde_plug
-#         ip: 10.0.0.1/24
+namespace:
+  - name: ns1
+    interfaces: 
+      - name: eth0
+        endpoint: sw1
+        # port:  2
+        # If port is specified i should use vde_plug
+        ip: 10.0.0.1/24
+
+      - name: eth1
+        endpoint: sw2
+        # port:  2
+        # If port is specified i should use vde_plug
+        ip: 10.0.0.2/24
 #
 #       - name: eth1
 #         endpoint: sw2

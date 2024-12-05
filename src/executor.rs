@@ -18,6 +18,17 @@ pub fn start(t: crate::vde::Topology) -> Result<()>{
         exec(&cmd, args).unwrap();
     }
 
+    for ns in t.get_namespaces() {
+        let cmd = ns.exec_command();
+        let mut args = ns.exec_args(WORKING_DIR);
+
+        args.insert(0, cmd);
+
+        // Namespaces need to be started in a new terminal
+
+        exec(TERMINAL, args).unwrap();
+    }
+
     Ok(())
 }
 
@@ -45,7 +56,7 @@ fn exec(cmd: &str, args: Vec<String>) -> Result<()> {
     dbg!("Command: ", &cmd);
     dbg!("Args: ", &args);
 
-    process::Command::new("vde_switch").args(args).spawn()?;
+    process::Command::new(cmd).args(args).spawn()?;
 
     Ok(())
 }
