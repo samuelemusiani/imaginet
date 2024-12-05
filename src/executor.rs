@@ -55,6 +55,17 @@ pub fn start(t: crate::vde::Topology) -> Result<()>{
         }
     }
 
+    dbg!("HERE");
+
+    for conn in t.get_connections() {
+        let cmd = conn.exec_command();
+        let args = conn.exec_args(WORKING_DIR);
+
+        exec(&cmd, args).unwrap();
+    }
+
+    dbg!("HERE 2");
+
     Ok(())
 }
 

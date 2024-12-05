@@ -27,7 +27,6 @@ pub struct Connection {
     pub name: String,
     pub a: String,
     pub b: String,
-    pub wirefilter: Option<bool>
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -1,7 +1,9 @@
 pub use switch::Switch;
 pub use namespace::{Namespace, NSInterface};
+pub use connection::Connection;
 mod switch;
 mod namespace;
+mod connection;
 
 const PID_FILE_NAME: &str = "pid";
 const MGMT_FILE_NAME: &str = "mgmt";
@@ -12,13 +14,16 @@ const SOCK_FILE_NAME: &str = "sock";
 /// information to create a network topology based on VDE
 pub struct Topology {
     switches: Vec<Switch>,
-    namespaces: Vec<Namespace>
+    namespaces: Vec<Namespace>,
+    connections: Vec<Connection>
 }
 
 impl Topology {
     pub fn new() -> Topology {
         Topology {
-            switches: Vec::new(), namespaces: Vec::new()
+            switches: Vec::new(), 
+            namespaces: Vec::new(), 
+            connections: Vec::new()
         }
     }
 
@@ -30,12 +35,20 @@ impl Topology {
         self.namespaces.push(ns);
     }
 
+    pub fn add_connection(&mut self, c: Connection) {
+        self.connections.push(c);
+    }
+
     pub fn get_switches(&self) -> &Vec<Switch> {
         &self.switches
     }
 
     pub fn get_namespaces(&self) -> &Vec<Namespace> {
         &self.namespaces
+    }
+
+    pub fn get_connections(&self) -> &Vec<Connection> {
+        &self.connections
     }
 }
 
