@@ -25,6 +25,10 @@ impl Namespace {
         &self.name
     }
 
+    pub fn get_interfaces(&self) -> &Vec<NSInterface> {
+        &self.interfaces
+    }
+
     pub fn add_interface(&mut self, interface: NSInterface) {
         self.interfaces.push(interface);
     }
@@ -33,21 +37,22 @@ impl Namespace {
         "vdens".to_owned()
     }
 
-    pub fn exec_args(&self, base: &str) -> Vec<String> {
+    pub fn exec_args(&self, base: &str, starter: &str) -> Vec<String> {
         if self.interfaces.len() == 0 {
             return vec!();
-        } else if self.interfaces.len() == 1 {
-            let p = PathBuf::from(base).join(&self.interfaces[0].endpoint);
-            return vec!(p.to_str().unwrap().to_owned());
-        } else {
-            let mut args = vec!("--multi".to_owned());
-            let b = PathBuf::from(base);
-            for i in &self.interfaces {
-                let p = b.join(&i.endpoint);
-                args.push(p.to_str().unwrap().to_owned());
-            }
-            return args;
+        } 
+
+        let mut args = vec!("--multi".to_owned());
+        let b = PathBuf::from(base);
+        for i in &self.interfaces {
+            let p = b.join(&i.endpoint);
+            args.push(p.to_str().unwrap().to_owned());
         }
+        args.push("--".to_owned());
+        args.push(starter.to_owned());
+        args.push(base.to_owned());
+        args.push(self.name.to_owned());
+        return args;
     }
 }
 
@@ -58,6 +63,14 @@ impl NSInterface {
             ip,
             endpoint
         }
+    }
+
+    pub fn get_name(&self) -> &String {
+        &self.name
+    }
+
+    pub fn get_ip(&self) -> &String {
+        &self.ip
     }
 }
 

@@ -3,6 +3,7 @@ use std::{fs, path::PathBuf, process, thread};
 
 const WORKING_DIR: &str = "/tmp/rsnet";
 const TERMINAL: &str = "foot";
+const NS_STARTER: &str = "./ns_starter.sh";
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
@@ -20,13 +21,65 @@ pub fn start(t: crate::vde::Topology) -> Result<()>{
 
     for ns in t.get_namespaces() {
         let cmd = ns.exec_command();
-        let mut args = ns.exec_args(WORKING_DIR);
+        let mut args = ns.exec_args(WORKING_DIR, NS_STARTER);
 
         args.insert(0, cmd);
 
         // Namespaces need to be started in a new terminal
 
         exec(TERMINAL, args).unwrap();
+
+        // Need to configure the namespace
+        thread::sleep(std::time::Duration::new(1, 0));
+        // The following format i choosen by the ns_starter.sh script
+        let pid = fs::read_to_string(&format!("{}/{}.pid", WORKING_DIR, 
+            ns.get_name()))?.trim().to_owned();
+
+        // I don't like the following part. It's too hardcoded
+        for (i, el) in ns.get_interfaces().iter().enumerate() {
+            let cmd = "nsenter";
+            let base_args = vec!(
+                "-t".to_owned(), pid.clone(), 
+                "--preserve-credentials".to_owned(), 
+                "-U".to_owned(), "-n".to_owned(),
+                "--keep-caps".to_owned(),
+            );
+
+            let mut args = base_args.clone();
+
+            args.push("ip".to_owned());
+            args.push("link".to_owned());
+            args.push("set".to_owned());
+            args.push(format!("vde{i}"));
+            args.push("name".to_owned());
+            args.push(el.get_name().to_owned());
+
+            exec(cmd, args).unwrap();
+            thread::sleep(std::time::Duration::new(1, 0));
+
+            let mut args = base_args.clone();
+
+            args.push("ip".to_owned());
+            args.push("address".to_owned());
+            args.push("add".to_owned());
+            args.push(el.get_ip().to_owned());
+            args.push("dev".to_owned());
+            args.push(el.get_name().to_owned());
+
+            exec(cmd, args).unwrap();
+            thread::sleep(std::time::Duration::new(1, 0));
+
+            let mut args = base_args.clone();
+
+            args.push("ip".to_owned());
+            args.push("l".to_owned());
+            args.push("set".to_owned());
+            args.push(el.get_name().to_owned());
+            args.push("up".to_owned());
+
+            exec(cmd, args).unwrap();
+            thread::sleep(std::time::Duration::new(1, 0));
+        }
     }
 
     Ok(())
@@ -53,8 +106,8 @@ fn init_dir(path: String) -> Result<()> {
 
 fn exec(cmd: &str, args: Vec<String>) -> Result<()> {
 
-    dbg!("Command: ", &cmd);
-    dbg!("Args: ", &args);
+    dbg!(&cmd);
+    dbg!(&args);
 
     process::Command::new(cmd).args(args).spawn()?;
 
@@ -63,68 +116,6 @@ fn exec(cmd: &str, args: Vec<String>) -> Result<()> {
 
 //#[allow(dead_code)]
 //pub fn run_net(c: crate::config::Config) {
-//    dbg!(&c);
-//
-//
-//    let path = "/tmp/rsnet";
-//    if fs::exists(&path).unwrap() {
-//        fs::remove_dir_all(&path).unwrap();
-//    }
-//    fs::create_dir(&path).unwrap();
-//
-//    fs::copy("./configurator.sh", &format!("{path}/configurator.sh")).unwrap();
-//
-//    for sw in c.switch {
-//        println!("Switch: {}", sw.name);
-//
-//        let mgmt_path = format!("{path}/{}_mgmt", &sw.name);
-//
-//
-//        let sw_sock = format!("{path}/{}", &sw.name);
-//        let mut args = vec!("vde_switch", 
-//            "--sock", &sw_sock, 
-//            "--mgmt", &mgmt_path, 
-//            "-d");
-//
-//        let sw_conf;
-//        if let Some(config_path) = sw.config {
-//            fs::copy(config_path, &format!("{path}/{}.conf", sw.name))
-//                .expect("Cannot find config file for switch");
-//
-//            args.push("--rcfile");
-//            sw_conf = format!("{path}/{}.conf", &sw.name);
-//            args.push(&sw_conf);
-//        };
-//
-//        let _ = process::Command::new("foot").args(args)
-//            .spawn();
-//
-//
-//        thread::sleep(time::Duration::new(1, 0));
-//
-//        if sw.vdeterm {
-//            let _ = process::Command::new("foot").args(["vdeterm", &mgmt_path]).spawn().expect("Can't spwan vdeterm for switch");
-//        }
-//    }
-//
-//    // Should check for socket, not wait :)
-//    thread::sleep(time::Duration::new(1, 0));
-//
-//    for ns in c.namespace {
-//        println!("Switch: {}", ns.name);
-//        let _ = process::Command::new("foot").args(["vdens", &format!("vde:///{path}/{}", ns.connected), &format!("{path}/configurator.sh"), &format!("{path}/sconf_{}", ns.name)]).spawn();
-//
-//        dbg!("HERE");
-//
-//        let res = fs::write(&format!("{path}/sconf_{}", ns.name), format!("ip a a {} dev vde0\nip l set vde0 up\n", ns.ip).as_bytes());
-//        match res {
-//            Ok(_) => println!("File created"),
-//            Err(e) => eprintln!("{e}")
-//        };
-//
-//        thread::sleep(time::Duration::new(1, 0));
-//    }
-//
 //    for conn in c.connections {
 //        let cp1 = format!("{path}/{}", conn.a);
 //        let cp2 = format!("{path}/{}", conn.b);
