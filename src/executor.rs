@@ -116,33 +116,3 @@ fn ns_exec(pid: &str, command: &str) -> Result<()> {
     exec(cmd, base_args).unwrap();
     Ok(())
 }
-
-//#[allow(dead_code)]
-//pub fn run_net(c: crate::config::Config) {
-//    for conn in c.connections {
-//        let cp1 = format!("{path}/{}", conn.a);
-//        let cp2 = format!("{path}/{}", conn.b);
-//
-//        let mut args = vec!("vde_plug", &cp1,);
-//
-//        let wrp = format!("{path}/wr_{}_mng", conn.name);
-//        if let Some(_) = conn.wirefilter {
-//            args.append(&mut vec!("=", "wirefilter", "-M", &wrp, "="));
-//        } else {
-//            args.push("=");
-//        }
-//
-//        let mut conn2 = vec!("vde_plug", &cp2);
-//        args.append(&mut conn2);
-//
-//        // Without the need of wirefilter we could probably only
-//        // use vde_plug without dpipe. There is a performance hit?
-//        let _ = process::Command::new("dpipe")
-//            .args(args).spawn();
-//
-//        if let Some(_) = conn.wirefilter {
-//            let _ = process::Command::new("foot")
-//                .args(["vdeterm", &wrp]).spawn();
-//        }
-//    }
-//}
