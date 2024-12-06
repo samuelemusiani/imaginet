@@ -1,9 +1,7 @@
-use clap::Parser;
-use core::time;
-use std::{fs, process, thread, path::Path};
-use serde::{Serialize, Deserialize};
+use std::{fs, process};
 
-/// ImagiNet
+use clap::Parser;
+
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
@@ -12,34 +10,9 @@ struct Args {
     path: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Switch {
-    name: String,
-    vdeterm: bool,
-    config: Option<String>
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Namespace {
-    name: String,
-    connected: String,
-    ip: String
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Connection {
-    name: String,
-    a: String,
-    b: String,
-    wirefilter: Option<bool>
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Config {
-    switch: Vec<Switch>,
-    namespace: Vec<Namespace>,
-    connections: Vec<Connection>
-}
+mod vde;
+mod config;
+mod executor;
 
 fn main() {
     let args = Args::parse();
@@ -52,99 +25,52 @@ fn main() {
             process::exit(1);
         }
         Ok(file) => {
-            println!("{file}");
-            let c: Config = serde_yaml::from_str(&file).unwrap();
+            let c = config::Config::from_string(&file);
 
-            run_net(c);
+            let t = config_to_vde_topology(c);
+
+            executor::start(t).unwrap();
         }
     } 
 }
 
-fn run_net(c: Config) {
-    dbg!(&c);
+fn config_to_vde_topology(c: config::Config) -> vde::Topology {
+    let mut t = vde::Topology::new();
 
+    if let Some(sws) = &c.switch {
+        for sw in sws {
+            let mut s = vde::Switch::new(sw.name.clone());
 
-    let path = "/tmp/rsnet";
-    if fs::exists(&path).unwrap() {
-        fs::remove_dir_all(&path).unwrap();
-    }
-    fs::create_dir(&path).unwrap();
+            if let Some(config) = &sw.config {
+                let c = fs::read_to_string(config).expect("Config file not found");
+                c.lines().for_each(|l| s.add_config(l.to_owned()));
+            }
 
-    fs::copy("./configurator.sh", &format!("{path}/configurator.sh")).unwrap();
-
-    for sw in c.switch {
-        println!("Switch: {}", sw.name);
-
-        let mgmt_path = format!("{path}/{}_mgmt", &sw.name);
-
-
-        let sw_sock = format!("{path}/{}", &sw.name);
-        let mut args = vec!("vde_switch", 
-            "--sock", &sw_sock, 
-            "--mgmt", &mgmt_path, 
-            "-d");
-
-        let sw_conf;
-        if let Some(config_path) = sw.config {
-            fs::copy(config_path, &format!("{path}/{}.conf", sw.name))
-                .expect("Cannot find config file for switch");
-
-            args.push("--rcfile");
-            sw_conf = format!("{path}/{}.conf", &sw.name);
-            args.push(&sw_conf);
-        };
-
-        let _ = process::Command::new("foot").args(args)
-            .spawn();
-
-        
-        thread::sleep(time::Duration::new(1, 0));
-
-        if sw.vdeterm {
-            let _ = process::Command::new("foot").args(["vdeterm", &mgmt_path]).spawn().expect("Can't spwan vdeterm for switch");
+            t.add_switch(s);
         }
     }
 
-    // Should check for socket, not wait :)
-    thread::sleep(time::Duration::new(1, 0));
-
-    for ns in c.namespace {
-        println!("Switch: {}", ns.name);
-        let _ = process::Command::new("foot").args(["vdens", &format!("vde:///{path}/{}", ns.connected), &format!("{path}/configurator.sh"), &format!("{path}/sconf_{}", ns.name)]).spawn();
-
-        dbg!("HERE");
-
-        let res = fs::write(&format!("{path}/sconf_{}", ns.name), format!("ip a a {} dev vde0\nip l set vde0 up\n", ns.ip).as_bytes());
-        match res {
-            Ok(_) => println!("File created"),
-            Err(e) => eprintln!("{e}")
-        };
-
-        thread::sleep(time::Duration::new(1, 0));
-    }
-
-    for conn in c.connections {
-        let cp1 = format!("{path}/{}", conn.a);
-        let cp2 = format!("{path}/{}", conn.b);
-
-        let mut args = vec!("vde_plug", &cp1,);
-
-        let wrp = format!("{path}/wr_{}_mng", conn.name);
-        if let Some(_) = conn.wirefilter {
-            args.append(&mut vec!("=", "wirefilter", "-M", &wrp, "="));
-        } else {
-            args.push("=");
-        }
-
-        let mut conn2 = vec!("vde_plug", &cp2);
-        args.append(&mut conn2);
-
-        let _ = process::Command::new("dpipe")
-            .args(args).spawn();
-
-        if let Some(_) = conn.wirefilter {
-            let _ = process::Command::new("foot")
-                .args(["vdeterm", &wrp]).spawn();
+    if let Some(nss) = &c.namespace {
+        for ns in nss {
+            let mut n = vde::Namespace::new(ns.name.clone());
+            for i in &ns.interfaces {
+                let endp = vde::calculate_endpoint_type(&t, &i.endpoint);
+                let ni = vde::NSInterface::new(i.name.clone(), i.ip.clone(), endp, i.port);
+                n.add_interface(ni);
+            }
+            t.add_namespace(n);
         }
     }
+
+    if let Some(conns) = &c.connections {
+        for c in conns {
+            let endp_a = vde::calculate_endpoint_type(&t, &c.a);
+            let endp_b = vde::calculate_endpoint_type(&t, &c.b);
+            let conn = vde::Connection::new(
+                c.name.clone(), endp_a, endp_b);
+            t.add_connection(conn);
+        }
+    }
+
+    return t;
 }
