@@ -3,11 +3,21 @@ use std::{fs, process};
 use clap::Parser;
 
 #[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
+#[command(version, about, long_about = None, arg_required_else_help=true)]
 struct Args {
-    /// Path to file
-    #[arg(short, long)]
-    path: String,
+
+    #[command(subcommand)]
+    pub command: Option<Commands>,
+
+}
+
+#[derive(Parser, Debug)]
+enum Commands {
+    #[command(about = "Create a VDE Topology")]
+    Create {
+        /// Path to configuration file
+        config: String
+    }
 }
 
 mod vde;
@@ -17,7 +27,20 @@ mod executor;
 fn main() {
     let args = Args::parse();
 
-    let file = fs::read_to_string(args.path);
+    match args.command {
+        Some(command) => match command {
+            Commands::Create {config } => create(config)
+        }
+        None => {
+            eprintln!("No command provided");
+            process::exit(1);
+        }
+    }
+
+}
+
+fn create(config: String) {
+    let file = fs::read_to_string(config);
 
     match file {
         Err(e) => {
@@ -29,7 +52,8 @@ fn main() {
 
             let t = config_to_vde_topology(c);
 
-            executor::start(t).unwrap();
+            //executor::start(t).unwrap();
+            executor::write_topology(t).unwrap();
         }
     } 
 }

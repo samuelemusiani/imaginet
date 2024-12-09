@@ -1,8 +1,10 @@
 use std::{fmt::format, path::PathBuf};
 use super::{MGMT_FILE_NAME, PID_FILE_NAME, SOCK_FILE_NAME};
+use serde::{Serialize, Deserialize};
 
 /// This is the internal rappresentation of a switch
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Switch {
     /// The name should be unique
     name: String,

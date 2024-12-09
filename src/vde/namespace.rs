@@ -1,10 +1,13 @@
 use std::path::PathBuf;
+use serde::{Serialize, Deserialize};
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Namespace {
     name: String,
     interfaces: Vec<NSInterface>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct NSInterface {
     name: String,
     ip: String,

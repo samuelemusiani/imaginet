@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf, process, thread};
+use std::{fs, process, thread};
 //use core::time;
 
 const WORKING_DIR: &str = "/tmp/rsnet";
@@ -114,5 +114,15 @@ fn ns_exec(pid: &str, command: &str) -> Result<()> {
     base_args.extend(args);
 
     exec(cmd, base_args).unwrap();
+    Ok(())
+}
+
+pub fn write_topology(t: crate::vde::Topology) -> Result<()> {
+    init()?;
+    
+    let t = t.to_string();
+
+    fs::write(&format!("{}/topology", WORKING_DIR), t)?;
+
     Ok(())
 }

@@ -1,6 +1,7 @@
 pub use switch::Switch;
 pub use namespace::{Namespace, NSInterface};
 pub use connection::Connection;
+use serde::{Serialize, Deserialize};
 mod switch;
 mod namespace;
 mod connection;
@@ -12,6 +13,7 @@ const SOCK_FILE_NAME: &str = "sock";
 
 /// A vde topology is a struct that contains all the necessary 
 /// information to create a network topology based on VDE
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Topology {
     switches: Vec<Switch>,
     namespaces: Vec<Namespace>,
@@ -49,6 +51,10 @@ impl Topology {
 
     pub fn get_connections(&self) -> &Vec<Connection> {
         &self.connections
+    }
+
+    pub fn to_string(&self) -> String {
+        serde_yaml::to_string(self).unwrap()
     }
 }
 
