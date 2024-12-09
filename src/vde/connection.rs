@@ -4,15 +4,19 @@ use std::path::PathBuf;
 pub struct Connection {
     pub name: String,
     pub a: String,
+    pub port_a: Option<u32>,
     pub b: String,
+    pub port_b: Option<u32>,
 }
 
 impl Connection {
-    pub fn new(name: String, a: String, b: String) -> Connection {
+    pub fn new(name: String, a: String, port_a: Option<u32>, b: String, port_b: Option<u32>) -> Connection {
         Connection {
             name,
             a,
-            b
+            port_a,
+            b,
+            port_b,
         }
     }
 
@@ -30,8 +34,16 @@ impl Connection {
 
     pub fn exec_args(&self, base: &str) -> Vec<String> {
         let b = PathBuf::from(base);
-        let pa = b.join(&self.a).to_str().unwrap().to_owned();
-        let pb = b.join(&self.b).to_str().unwrap().to_owned();
+        let mut pa = b.join(&self.a).to_str().unwrap().to_owned();
+        let mut pb = b.join(&self.b).to_str().unwrap().to_owned();
+
+        if let Some(port) = self.port_a {
+            pa.push_str(&format!("[{port}]"));
+        }
+
+        if let Some(port) = self.port_b {
+            pb.push_str(&format!("[{port}]"));
+        }
 
         return vec!(
             pa, pb,

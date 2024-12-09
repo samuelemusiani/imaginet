@@ -26,7 +26,9 @@ pub struct NSInterface {
 pub struct Connection {
     pub name: String,
     pub a: String,
+    pub port_a: Option<u32>,
     pub b: String,
+    pub port_b: Option<u32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

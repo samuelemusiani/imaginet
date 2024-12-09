@@ -47,4 +47,6 @@ namespace:
 connections:
   - name: conn1
     a:  sw1
+    port_a: 10
     b:  sw2
+    port_b: 20
