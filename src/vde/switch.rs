@@ -1,4 +1,4 @@
-use std::{fmt::format, path::PathBuf};
+use std::path::PathBuf;
 use super::{MGMT_FILE_NAME, PID_FILE_NAME, SOCK_FILE_NAME};
 use serde::{Serialize, Deserialize};
 

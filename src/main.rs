@@ -21,6 +21,10 @@ enum Commands {
 
     #[command(about = "Start a VDE Topology")]  
     Start {
+    },
+
+    #[command(about = "Status of running topology")]  
+    Status {
     }
 }
 
@@ -34,7 +38,8 @@ fn main() {
     match args.command {
         Some(command) => match command {
             Commands::Create {config } => create(config),
-            Commands::Start {} => start(),
+            Commands::Start {} => executor::start().unwrap(),
+            Commands::Status {} => executor::topology_status().unwrap(),
         }
         None => {
             eprintln!("No command provided");
@@ -63,9 +68,6 @@ fn create(config: String) {
     } 
 }
 
-fn start() {
-    executor::start().unwrap();
-}
 
 fn config_to_vde_topology(c: config::Config) -> vde::Topology {
     let mut t = vde::Topology::new();

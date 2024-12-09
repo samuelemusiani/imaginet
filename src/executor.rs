@@ -7,10 +7,15 @@ const NS_STARTER: &str = "./ns_starter.sh";
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
-pub fn start() -> Result<()>{
-
+pub fn get_topology() -> Result<crate::vde::Topology> {
     let t = &fs::read_to_string(&format!("{}/topology", WORKING_DIR))?;
     let t = crate::vde::Topology::from_string(t);
+
+    Ok(t)
+}
+
+pub fn start() -> Result<()>{
+    let t = get_topology()?;
 
     for sw in t.get_switches() {
         init_dir(sw.base_path(WORKING_DIR))?;
@@ -60,6 +65,8 @@ pub fn start() -> Result<()>{
     dbg!("HERE");
 
     for conn in t.get_connections() {
+        init_dir(conn.base_path(WORKING_DIR))?;
+
         let cmd = conn.exec_command();
         let args = conn.exec_args(WORKING_DIR);
 
@@ -127,4 +134,62 @@ pub fn write_topology(t: crate::vde::Topology) -> Result<()> {
     fs::write(&format!("{}/topology", WORKING_DIR), t)?;
 
     Ok(())
+}
+
+pub fn topology_status() -> Result<()> {
+    let t = get_topology()?;
+
+    println!("--- Topology status ---");
+    println!("Namespaces:");
+    for n in t.get_namespaces() {
+        let path = n.pid_path(WORKING_DIR);
+        dbg!(&path);
+        if pid_path_is_alive(&path)? {
+            println!("{} alive", n.get_name());
+        } else {
+            println!("{} dead", n.get_name());
+        }
+    };
+
+    println!("\nSwitches:");
+
+    for s in t.get_switches() {
+        let path = s.pid_path(WORKING_DIR);
+        dbg!(&path);
+        if pid_path_is_alive(&path)? {
+            println!("{} alive", s.get_name());
+        } else {
+            println!("{} dead", s.get_name());
+        }
+    };
+
+    println!("\nConnections:");
+
+    for conn in t.get_connections() {
+        let path = conn.pid_path(WORKING_DIR);
+        dbg!(&path);
+        if pid_path_is_alive(&path)? {
+            println!("{} alive", conn.name);
+        } else {
+            println!("{} dead", conn.name);
+        }
+    };
+
+    Ok(())
+}
+
+fn pid_path_is_alive(path: &str) -> Result<bool> {
+    if !fs::exists(&path)? {
+        return Ok(false);
+    }
+    let pid = fs::read_to_string(path)?;
+    let pid = pid.trim();
+
+    return Ok(pid_is_alive(pid))
+}
+
+fn pid_is_alive(pid: &str) -> bool {
+    // To check if a pid is alive we could use the kill syscall.
+    // Or we could use the ps command
+    process::Command::new("ps").arg("-p").arg(pid).output().unwrap().status.success()
 }

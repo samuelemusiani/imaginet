@@ -37,6 +37,11 @@ impl Namespace {
         self.interfaces.push(interface);
     }
 
+    pub fn pid_path(&self, base: &str) -> String {
+        // Path is written by the ns_starter.sh script
+        PathBuf::from(base).join(&format!("{}.pid", &self.name)).to_str().unwrap().to_owned()
+    }
+
     pub fn exec_command(&self) -> String {
         "vdens".to_owned()
     }
