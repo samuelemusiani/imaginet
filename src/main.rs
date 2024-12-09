@@ -2,6 +2,7 @@ use std::{fs, process};
 
 use clap::Parser;
 
+/// Create and manage VDE topologies
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None, arg_required_else_help=true)]
 struct Args {
@@ -13,13 +14,13 @@ struct Args {
 
 #[derive(Parser, Debug)]
 enum Commands {
-    #[command(about = "Create a VDE Topology")]
+    #[command(about = "Create a topology")]
     Create {
         /// Path to configuration file
         config: String
     },
 
-    #[command(about = "Start a VDE Topology")]  
+    #[command(about = "Start a topology")]  
     Start {
     },
 
@@ -27,7 +28,7 @@ enum Commands {
     Status {
     },
 
-    #[command(about = "Stop a VDE Topology")]
+    #[command(about = "Stop a topology")]
     Stop {
     }
 }
