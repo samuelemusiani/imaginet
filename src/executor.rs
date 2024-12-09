@@ -7,8 +7,10 @@ const NS_STARTER: &str = "./ns_starter.sh";
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
-pub fn start(t: crate::vde::Topology) -> Result<()>{
-    init()?;
+pub fn start() -> Result<()>{
+
+    let t = &fs::read_to_string(&format!("{}/topology", WORKING_DIR))?;
+    let t = crate::vde::Topology::from_string(t);
 
     for sw in t.get_switches() {
         init_dir(sw.base_path(WORKING_DIR))?;

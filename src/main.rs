@@ -17,6 +17,10 @@ enum Commands {
     Create {
         /// Path to configuration file
         config: String
+    },
+
+    #[command(about = "Start a VDE Topology")]  
+    Start {
     }
 }
 
@@ -29,7 +33,8 @@ fn main() {
 
     match args.command {
         Some(command) => match command {
-            Commands::Create {config } => create(config)
+            Commands::Create {config } => create(config),
+            Commands::Start {} => start(),
         }
         None => {
             eprintln!("No command provided");
@@ -56,6 +61,10 @@ fn create(config: String) {
             executor::write_topology(t).unwrap();
         }
     } 
+}
+
+fn start() {
+    executor::start().unwrap();
 }
 
 fn config_to_vde_topology(c: config::Config) -> vde::Topology {

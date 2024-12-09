@@ -56,6 +56,10 @@ impl Topology {
     pub fn to_string(&self) -> String {
         serde_yaml::to_string(self).unwrap()
     }
+
+    pub fn from_string(file: &str) -> Topology {
+        serde_yaml::from_str(&file).unwrap()
+    }
 }
 
 pub fn calculate_endpoint_type(t: &Topology, name: &str) -> String {
