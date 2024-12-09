@@ -201,6 +201,7 @@ pub fn topology_stop() -> Result<()> {
         let path = sw.pid_path(WORKING_DIR);
         if pid_path_is_alive(&path)? {
             let pid = fs::read_to_string(&path)?.trim().to_owned();
+            // We could send a shutdown signal to the switch :)
             process::Command::new("kill").arg(pid).spawn()?;
         }
     }
@@ -222,4 +223,50 @@ pub fn topology_stop() -> Result<()> {
     }
 
     Ok(())
+}
+
+pub fn attach(device: String) -> Result<()> {
+    let t = get_topology()?;
+
+    for sw in t.get_switches() {
+        if sw.get_name() == &device {
+            let path = sw.pid_path(WORKING_DIR);
+            if pid_path_is_alive(&path)? {
+                let pid = fs::read_to_string(&path)?.trim().parse().unwrap();
+                let cmd = sw.attach_command();
+                let mut args = sw.attach_args(WORKING_DIR, pid);
+
+                args.insert(0, cmd);
+
+                exec(TERMINAL, args).unwrap();
+                return Ok(());
+            }
+        }
+    }
+
+    for ns in t.get_namespaces() {
+        if ns.get_name() == &device {
+            let path = ns.pid_path(WORKING_DIR);
+            if pid_path_is_alive(&path)? {
+                let pid = fs::read_to_string(&path)?.trim().parse().unwrap();
+                let cmd = ns.attach_command();
+                let mut args = ns.attach_args(WORKING_DIR, pid);
+                args.insert(0, cmd);
+
+                exec(TERMINAL, args).unwrap();
+                return Ok(());
+            }
+        }
+    }
+
+    for conn in t.get_connections() {
+        if conn.name == device {
+            let path = conn.pid_path(WORKING_DIR);
+            if pid_path_is_alive(&path)? {
+                return Err("Can't attach to a connection".into());
+            }
+        }
+    }
+
+    Err("Device not found".into())
 }

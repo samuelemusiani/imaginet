@@ -14,6 +14,12 @@ struct Args {
 
 #[derive(Parser, Debug)]
 enum Commands {
+    #[command(about = "Attach to a device in a topology")]
+    Attach {
+        /// Name of the device to attach to
+        device: String
+    },
+
     #[command(about = "Create a topology")]
     Create {
         /// Path to configuration file
@@ -30,7 +36,7 @@ enum Commands {
 
     #[command(about = "Stop a topology")]
     Stop {
-    }
+    },
 }
 
 mod vde;
@@ -46,6 +52,7 @@ fn main() {
             Commands::Start {} => executor::topology_start().unwrap(),
             Commands::Status {} => executor::topology_status().unwrap(),
             Commands::Stop {} => executor::topology_stop().unwrap(),
+            Commands::Attach { device } => executor::attach(device).unwrap(),
         } None => {
             eprintln!("No command provided");
             process::exit(1);

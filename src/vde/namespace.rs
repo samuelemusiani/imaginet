@@ -67,6 +67,20 @@ impl Namespace {
         args.push(self.name.to_owned());
         return args;
     }
+
+    pub fn attach_command(&self) -> String {
+        "nsenter".to_owned()
+    }
+
+    pub fn attach_args(&self, _base: &str, pid: u32) -> Vec<String> {
+        vec!(
+            "-t".to_owned(), pid.to_string(),
+            "--preserve-credentials".to_owned(),
+            "-U".to_owned(),
+            "-n".to_owned(),
+            "--keep-caps".to_owned(),
+        )
+    }
 }
 
 impl NSInterface {

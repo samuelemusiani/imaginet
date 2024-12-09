@@ -73,6 +73,15 @@ impl Switch {
             "--rcfile".to_owned(), conf_p,
             "--daemon".to_owned()]
     }
+
+    pub fn attach_command(&self) -> String {
+        String::from("vdeterm")
+    }
+
+    pub fn attach_args(&self, base: &str, _pid: u32) -> Vec<String> {
+        let sock_p = self.mgmt_path(base);
+        vec![sock_p]
+    }
 }
 
 #[cfg(test)]
