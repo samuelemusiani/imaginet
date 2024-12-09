@@ -25,6 +25,10 @@ enum Commands {
 
     #[command(about = "Status of running topology")]  
     Status {
+    },
+
+    #[command(about = "Stop a VDE Topology")]
+    Stop {
     }
 }
 
@@ -37,11 +41,11 @@ fn main() {
 
     match args.command {
         Some(command) => match command {
-            Commands::Create {config } => create(config),
-            Commands::Start {} => executor::start().unwrap(),
+            Commands::Create { config } => create(config),
+            Commands::Start {} => executor::topology_start().unwrap(),
             Commands::Status {} => executor::topology_status().unwrap(),
-        }
-        None => {
+            Commands::Stop {} => executor::topology_stop().unwrap(),
+        } None => {
             eprintln!("No command provided");
             process::exit(1);
         }

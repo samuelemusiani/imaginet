@@ -14,7 +14,7 @@ pub fn get_topology() -> Result<crate::vde::Topology> {
     Ok(t)
 }
 
-pub fn start() -> Result<()>{
+pub fn topology_start() -> Result<()>{
     let t = get_topology()?;
 
     for sw in t.get_switches() {
@@ -192,4 +192,34 @@ fn pid_is_alive(pid: &str) -> bool {
     // To check if a pid is alive we could use the kill syscall.
     // Or we could use the ps command
     process::Command::new("ps").arg("-p").arg(pid).output().unwrap().status.success()
+}
+
+pub fn topology_stop() -> Result<()> {
+    let t = get_topology()?;
+
+    for sw in t.get_switches() {
+        let path = sw.pid_path(WORKING_DIR);
+        if pid_path_is_alive(&path)? {
+            let pid = fs::read_to_string(&path)?.trim().to_owned();
+            process::Command::new("kill").arg(pid).spawn()?;
+        }
+    }
+
+    for ns in t.get_namespaces() {
+        let path = ns.pid_path(WORKING_DIR);
+        if pid_path_is_alive(&path)? {
+            let pid = fs::read_to_string(&path)?.trim().to_owned();
+            process::Command::new("kill").arg(pid).spawn()?;
+        }
+    }
+
+    for conn in t.get_connections() {
+        let path = conn.pid_path(WORKING_DIR);
+        if pid_path_is_alive(&path)? {
+            let pid = fs::read_to_string(&path)?.trim().to_owned();
+            process::Command::new("kill").arg(pid).spawn()?;
+        }
+    }
+
+    Ok(())
 }
