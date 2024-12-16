@@ -97,6 +97,10 @@ fn config_to_vde_topology(c: config::Config) -> vde::Topology {
                 c.lines().for_each(|l| s.add_config(l.to_owned()));
             }
 
+            if let Some(ports) = sw.ports {
+                s.set_ports(ports);
+            }
+
             t.add_switch(s);
         }
     }

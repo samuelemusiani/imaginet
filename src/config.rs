@@ -6,7 +6,8 @@ use std::net;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Switch {
     pub name: String,
-    pub config: Option<String>
+    pub config: Option<String>,
+    pub ports: Option<u32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -42,12 +43,84 @@ pub struct Config {
 
 impl Config {
     pub fn from_string(file: &str) -> Result<Config> {
-        let c = serde_yaml::from_str(&file)
+        let c = serde_yaml::from_str::<Self>(&file)
             .context("Deserialize config file failed")?;
 
-        checks(&c).context("Config checks failed")?;
+        c.checks().context("Config checks failed")?;
 
         Ok(c)
+    }
+
+    fn checks(&self) -> Result<()>{
+        // All names must be unique
+
+        let mut set = HashSet::new();
+
+        if let Some(ns) = &self.namespace {
+            for n in ns {
+                if !set.insert(&n.name) {
+                    anyhow::bail!("Namespace name {} is not unique", n.name);
+                }
+            }
+        }
+
+        if let Some(sw) = &self.switch {
+            for s in sw {
+                if !set.insert(&s.name) {
+                    anyhow::bail!("Switch name {} is not unique", s.name);
+                }
+            }
+        }
+        
+        if let Some(con) = &self.connections {
+            for c in con {
+                if !set.insert(&c.name) {
+                    anyhow::bail!("Connection name {} is not unique", c.name);
+                }
+            }
+        }
+
+        drop(set);
+
+        // Endpoints must exist and ports must be valid
+
+        let mut set = HashSet::new();
+
+        if let Some(sw) = &self.switch {
+            for s in sw {
+                set.insert(&s.name);
+            }
+        }
+
+        if let Some(ns) = &self.namespace {
+            for n in ns {
+                for i in &n.interfaces {
+                    if !set.contains(&i.endpoint) {
+                        anyhow::bail!("Endpoint {} does not exist on interface {} on namespace {}", i.endpoint, i.name, n.name);
+                    }
+                }
+            }
+        }
+
+        if let Some(con) = &self.connections {
+            for c in con {
+                if !set.contains(&c.a) {
+                    anyhow::bail!("Endpoint {} does not exist on connection {}", c.a, c.name);
+                }
+                if !set.contains(&c.b) {
+                    anyhow::bail!("Endpoint {} does not exist on connection {}", c.b, c.name);
+                }
+            }
+        }
+
+        // Specific checks
+        if let Some(ns) = &self.namespace {
+            for n in ns {
+                n.checks().context(format!("Checks failed for namespace {}", n.name))?;
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -88,79 +161,6 @@ impl NSInterface {
 
         Ok(())
     }
-}
-
-fn checks(c: &Config) -> Result<()>{
-    // All names must be unique
-
-    let mut set = HashSet::new();
-
-    if let Some(ns) = &c.namespace {
-        for n in ns {
-            if !set.insert(&n.name) {
-                anyhow::bail!("Namespace name {} is not unique", n.name);
-            }
-        }
-    }
-
-    if let Some(sw) = &c.switch {
-        for s in sw {
-            if !set.insert(&s.name) {
-                anyhow::bail!("Switch name {} is not unique", s.name);
-            }
-        }
-    }
-    
-    if let Some(con) = &c.connections {
-        for c in con {
-            if !set.insert(&c.name) {
-                anyhow::bail!("Connection name {} is not unique", c.name);
-            }
-        }
-    }
-
-    drop(set);
-
-    // Endpoints must exist
-
-    let mut set = HashSet::new();
-
-    if let Some(sw) = &c.switch {
-        for s in sw {
-            set.insert(&s.name);
-        }
-    }
-
-    if let Some(ns) = &c.namespace {
-        for n in ns {
-            for i in &n.interfaces {
-                if !set.contains(&i.endpoint) {
-                    anyhow::bail!("Endpoint {} does not exist on interface {} on namespace {}", i.endpoint, i.name, n.name);
-                }
-            }
-        }
-    }
-
-    if let Some(con) = &c.connections {
-        for c in con {
-            if !set.contains(&c.a) {
-                anyhow::bail!("Endpoint {} does not exist on connection {}", c.a, c.name);
-            }
-            if !set.contains(&c.b) {
-                anyhow::bail!("Endpoint {} does not exist on connection {}", c.b, c.name);
-            }
-        }
-    }
-
-
-    // Specific checks
-    if let Some(ns) = &c.namespace {
-        for n in ns {
-            n.checks().context(format!("Checks failed for namespace {}", n.name))?;
-        }
-    }
-
-    Ok(())
 }
 
 #[cfg(test)]
