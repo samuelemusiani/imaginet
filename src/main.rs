@@ -1,4 +1,5 @@
 use std::{fs, process};
+use anyhow::Result;
 
 use clap::Parser;
 
@@ -43,12 +44,12 @@ mod vde;
 mod config;
 mod executor;
 
-fn main() {
+fn main() -> Result<()> {
     let args = Args::parse();
 
     match args.command {
         Some(command) => match command {
-            Commands::Create { config } => create(config),
+            Commands::Create { config } => create(config)?,
             Commands::Start {} => executor::topology_start().unwrap(),
             Commands::Status {} => executor::topology_status().unwrap(),
             Commands::Stop {} => executor::topology_stop().unwrap(),
@@ -57,11 +58,12 @@ fn main() {
             eprintln!("No command provided");
             process::exit(1);
         }
-    }
+    };
 
+    Ok(())
 }
 
-fn create(config: String) {
+fn create(config: String) -> Result<()> {
     let file = fs::read_to_string(config);
 
     match file {
@@ -70,14 +72,16 @@ fn create(config: String) {
             process::exit(1);
         }
         Ok(file) => {
-            let c = config::Config::from_string(&file);
+            let c = config::Config::from_string(&file)?;
 
             let t = config_to_vde_topology(c);
 
             //executor::start(t).unwrap();
             executor::write_topology(t).unwrap();
         }
-    } 
+    };
+
+    Ok(())
 }
 
 

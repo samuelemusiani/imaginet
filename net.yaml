@@ -22,7 +22,7 @@ namespace:
   - name: ns2
     interfaces:
       - name: eth0
-        endpoint: sw1
+        endpoint: sw2
         port: 2
         ip: 10.0.0.2/24
 
