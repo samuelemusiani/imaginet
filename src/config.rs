@@ -1,7 +1,15 @@
 use serde::{Serialize, Deserialize};
-use anyhow::{bail, Context, Result};
-use std::collections::HashSet;
+use anyhow::{Context, Result};
+use std::collections::{HashSet, HashMap};
 use std::net;
+
+const DEFAULT_SWITCH_PORTS: u32 = 32;
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct Endpoint {
+    pub name: String,
+    pub port: Option<u32>,
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Switch {
@@ -21,17 +29,14 @@ pub struct Namespace {
 pub struct NSInterface {
     pub name: String,
     pub ip: String,
-    pub endpoint: String,
-    pub port: Option<u32>
+    pub endpoint: Endpoint,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Connection {
     pub name: String,
-    pub a: String,
-    pub port_a: Option<u32>,
-    pub b: String,
-    pub port_b: Option<u32>,
+    pub endpoint_a: Endpoint,
+    pub endpoint_b: Endpoint,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -71,7 +76,7 @@ impl Config {
                 }
             }
         }
-        
+
         if let Some(con) = &self.connections {
             for c in con {
                 if !set.insert(&c.name) {
@@ -84,32 +89,53 @@ impl Config {
 
         // Endpoints must exist and ports must be valid
 
-        let mut set = HashSet::new();
+        let mut map = HashMap::new();
 
         if let Some(sw) = &self.switch {
             for s in sw {
-                set.insert(&s.name);
+                // To check if the port endpoint is valid we reuse the Endpoint struct,
+                // but with a different purpose for the port field. In this case, the port
+                // field is used to store the number of ports of the switch.
+                let ports = match s.ports {
+                    Some(p) => p,
+                    None => DEFAULT_SWITCH_PORTS,
+                };
+                map.insert(&s.name, Endpoint { name: s.name.clone(), port: Some(ports) });
             }
         }
+
+        // To avoid another function we use the endpoint_check closure.
+        // This simply checks if the endpoint exists and if the port is valid.
+        // based on the map we created before.
+        let endpoint_check = |name: String, port: Option<u32>| -> Result<()> {
+            let end = map.get(&name)
+                .ok_or_else(|| anyhow::anyhow!("Endpoint {name} does not exist"))?;
+
+            if let Some(p) = port {
+                let end_ports = end.port.expect("Internal error: port field is None");
+                if p >= end_ports {
+                    anyhow::bail!("Port {p} is out of range for endpoint {name} (max {end_ports} ports)");
+                };
+            };
+
+            Ok(())
+        };
 
         if let Some(ns) = &self.namespace {
             for n in ns {
                 for i in &n.interfaces {
-                    if !set.contains(&i.endpoint) {
-                        anyhow::bail!("Endpoint {} does not exist on interface {} on namespace {}", i.endpoint, i.name, n.name);
-                    }
+                    endpoint_check(i.endpoint.name.clone(), i.endpoint.port)
+                        .context(format!("Checks failed for interface {} on namespace {}", i.name, n.name))?;
                 }
             }
         }
 
         if let Some(con) = &self.connections {
             for c in con {
-                if !set.contains(&c.a) {
-                    anyhow::bail!("Endpoint {} does not exist on connection {}", c.a, c.name);
-                }
-                if !set.contains(&c.b) {
-                    anyhow::bail!("Endpoint {} does not exist on connection {}", c.b, c.name);
-                }
+                endpoint_check(c.endpoint_a.name.clone(), c.endpoint_a.port)
+                    .context(format!("Checks failed for connection {} endpoint A", c.name))?;
+                endpoint_check(c.endpoint_b.name.clone(), c.endpoint_b.port)
+                    .context(format!("Checks failed for connection {} endpoint B", c.name))?;
             }
         }
 
@@ -137,10 +163,10 @@ impl Namespace {
 
 impl NSInterface {
     fn checks(&self) -> Result<()> {
-        // Check if IP is valid
+        // Check if IP is valid in CIDR notation
         let (ip, mask) = match self.ip.find('/') {
             Some(p) => (&self.ip[..p], &self.ip[p+1..]),
-            None => bail!("Invalid CIDR format, missing /"),
+            None => anyhow::bail!("Invalid CIDR format, missing /"),
         };
         let res = ip.parse::<net::IpAddr>()
             .context(format!("IP address: {}", self.ip))?;
@@ -149,12 +175,12 @@ impl NSInterface {
         match res {
             net::IpAddr::V4(_) => {
                 if m > 32 {
-                    bail!("Invalid mask, too large for IPv4 (> 32)");
+                    anyhow::bail!("Invalid mask, too large for IPv4 (> 32)");
                 }
             },
             net::IpAddr::V6(_) => {
                 if m > 128 {
-                    bail!("Invalid mask, too large for IPv6 (> 128)");
+                    anyhow::bail!("Invalid mask, too large for IPv6 (> 128)");
                 }
             }
         };

@@ -109,8 +109,8 @@ fn config_to_vde_topology(c: config::Config) -> vde::Topology {
         for ns in nss {
             let mut n = vde::Namespace::new(ns.name.clone());
             for i in &ns.interfaces {
-                let endp = vde::calculate_endpoint_type(&t, &i.endpoint);
-                let ni = vde::NSInterface::new(i.name.clone(), i.ip.clone(), endp, i.port);
+                let endp = vde::calculate_endpoint_type(&t, &i.endpoint.name);
+                let ni = vde::NSInterface::new(i.name.clone(), i.ip.clone(), endp, i.endpoint.port);
                 n.add_interface(ni);
             }
             t.add_namespace(n);
@@ -119,10 +119,12 @@ fn config_to_vde_topology(c: config::Config) -> vde::Topology {
 
     if let Some(conns) = &c.connections {
         for c in conns {
-            let endp_a = vde::calculate_endpoint_type(&t, &c.a);
-            let endp_b = vde::calculate_endpoint_type(&t, &c.b);
+            let endp_a = vde::calculate_endpoint_type(&t, &c.endpoint_a.name);
+            let port_a = c.endpoint_a.port;
+            let endp_b = vde::calculate_endpoint_type(&t, &c.endpoint_b.name);
+            let port_b = c.endpoint_b.port;
             let conn = vde::Connection::new(
-                c.name.clone(), endp_a, c.port_a, endp_b, c.port_b);
+                c.name.clone(), endp_a, port_a, endp_b, port_b);
             t.add_connection(conn);
         }
     }
