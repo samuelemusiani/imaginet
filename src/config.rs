@@ -74,6 +74,12 @@ impl Config {
                 if !set.insert(&s.name) {
                     anyhow::bail!("Switch name {} is not unique", s.name);
                 }
+
+                if let Some(port) = s.ports {
+                    if port == 0 {
+                        anyhow::bail!("Switch {} has 0 ports", s.name);
+                    }
+                }
             }
         }
 
@@ -114,7 +120,11 @@ impl Config {
             if let Some(p) = port {
                 let end_ports = end.port.expect("Internal error: port field is None");
                 if p >= end_ports {
-                    anyhow::bail!("Port {p} is out of range for endpoint {name} (max {end_ports} ports)");
+                    let mut s = String::new();
+                    if p == end_ports {
+                        s.push_str("\nPorts are zero-indexed, so you should decrement the port number by one :)");
+                    }
+                    anyhow::bail!("Port {p} is out of range for endpoint {name} (max {end_ports} ports){s}");
                 };
             };
 

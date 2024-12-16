@@ -2,7 +2,7 @@ switch:
   - name: sw1
     # config: ./sw1.conf
     # Default to 32 ports
-    ports: 40
+    ports: 0
 
   # - name: sw2
 
@@ -13,7 +13,6 @@ namespace:
         ip: 10.0.0.1/24
         endpoint: 
           name: sw1
-          port: 45
 
       # - name: eth1
       #   endpoint: sw1
@@ -48,12 +47,12 @@ namespace:
   #       # If port is specified i should use vde_plug
   #       ip: 10.1.0.2/24
 
-
-connections:
-  - name: conn1
-    endpoint_a:
-      name: sw1
-      port: 10
-    endpoint_b:
-      name: sw2
-      port: 20
+#
+# connections:
+#   - name: conn1
+#     endpoint_a:
+#       name: sw1
+#       port: 10
+#     endpoint_b:
+#       name: sw2
+#       port: 20
