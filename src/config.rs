@@ -66,6 +66,8 @@ impl Config {
                 if !set.insert(&n.name) {
                     anyhow::bail!("Namespace name {} is not unique", n.name);
                 }
+
+                n.checks().context(format!("Checks failed for namespace {}", n.name))?;
             }
         }
 
@@ -75,11 +77,7 @@ impl Config {
                     anyhow::bail!("Switch name {} is not unique", s.name);
                 }
 
-                if let Some(port) = s.ports {
-                    if port == 0 {
-                        anyhow::bail!("Switch {} has 0 ports", s.name);
-                    }
-                }
+                s.checks().context(format!("Checks failed for switch {}", s.name))?;
             }
         }
 
@@ -149,10 +147,15 @@ impl Config {
             }
         }
 
-        // Specific checks
-        if let Some(ns) = &self.namespace {
-            for n in ns {
-                n.checks().context(format!("Checks failed for namespace {}", n.name))?;
+        Ok(())
+    }
+}
+
+impl Switch {
+    fn checks(&self) -> Result<()> {
+        if let Some(p) = self.ports {
+            if p == 0 {
+                anyhow::bail!("Switch {} has 0 ports", self.name);
             }
         }
 
