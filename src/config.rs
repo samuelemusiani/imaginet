@@ -93,7 +93,7 @@ impl Config {
 
         // Endpoints must exist and ports must be valid
 
-        let mut map = HashMap::new();
+        let mut endpoint_map = HashMap::new();
 
         if let Some(sw) = &self.switch {
             for s in sw {
@@ -104,7 +104,7 @@ impl Config {
                     Some(p) => p,
                     None => DEFAULT_SWITCH_PORTS,
                 };
-                map.insert(&s.name, Endpoint { name: s.name.clone(), port: Some(ports) });
+                endpoint_map.insert(&s.name, Endpoint { name: s.name.clone(), port: Some(ports) });
             }
         }
 
@@ -112,7 +112,7 @@ impl Config {
         // This simply checks if the endpoint exists and if the port is valid.
         // based on the map we created before.
         let endpoint_check = |name: String, port: Option<u32>| -> Result<()> {
-            let end = map.get(&name)
+            let end = endpoint_map.get(&name)
                 .ok_or_else(|| anyhow::anyhow!("Endpoint {name} does not exist"))?;
 
             if let Some(p) = port {
@@ -129,11 +129,16 @@ impl Config {
             Ok(())
         };
 
+        let mut used_map = HashMap::<&String, u32>::new();
+
         if let Some(ns) = &self.namespace {
             for n in ns {
                 for i in &n.interfaces {
                     endpoint_check(i.endpoint.name.clone(), i.endpoint.port)
                         .context(format!("Checks failed for interface {} on namespace {}", i.name, n.name))?;
+
+                    // This increments a counter for each endpoint used
+                    *used_map.entry(&i.endpoint.name).or_default() += 1;
                 }
             }
         }
@@ -144,6 +149,19 @@ impl Config {
                     .context(format!("Checks failed for connection {} endpoint A", c.name))?;
                 endpoint_check(c.endpoint_b.name.clone(), c.endpoint_b.port)
                     .context(format!("Checks failed for connection {} endpoint B", c.name))?;
+
+                *used_map.entry(&c.endpoint_a.name).or_default() += 1;
+                *used_map.entry(&c.endpoint_b.name).or_default() += 1;
+            }
+        }
+
+
+        // Check if endpoint have finished all the ports
+        for (name, ports) in endpoint_map {
+            let used = used_map.get(&name).unwrap_or(&0);
+            let total_ports = ports.port.unwrap();
+            if *used > total_ports {
+                anyhow::bail!("Endpoint {name} has more ports used than available ({used} > {})\nYou're trying to connect to many things to {name}", total_ports);
             }
         }
 

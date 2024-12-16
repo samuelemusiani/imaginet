@@ -2,7 +2,7 @@ switch:
   - name: sw1
     # config: ./sw1.conf
     # Default to 32 ports
-    ports: 0
+    ports: 2
 
   # - name: sw2
 
@@ -19,12 +19,12 @@ namespace:
       #   port: 2
       #   ip: 10.1.0.1/24
 
-  # - name: ns2
-  #   interfaces:
-  #     - name: eth0
-  #       endpoint: sw2
-  #       port: 2
-  #       ip: 10.0.0.2/24
+  - name: ns2
+    interfaces:
+      - name: eth0
+        endpoint: 
+          name: sw1
+        ip: 10.0.0.2/24
 
   # - name: ns3
   #   interfaces:
