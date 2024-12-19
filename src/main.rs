@@ -50,10 +50,10 @@ fn main() -> Result<()> {
     match args.command {
         Some(command) => match command {
             Commands::Create { config } => create(config)?,
-            Commands::Start {} => executor::topology_start().unwrap(),
-            Commands::Status {} => executor::topology_status().unwrap(),
-            Commands::Stop {} => executor::topology_stop().unwrap(),
-            Commands::Attach { device } => executor::attach(device).unwrap(),
+            Commands::Start {} => executor::topology_start()?,
+            Commands::Status {} => executor::topology_status()?,
+            Commands::Stop {} => executor::topology_stop()?,
+            Commands::Attach { device } => executor::attach(device)?,
         } None => {
             eprintln!("No command provided");
             process::exit(1);

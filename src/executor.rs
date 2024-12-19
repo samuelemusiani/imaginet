@@ -1,38 +1,48 @@
 use std::{fs, process, thread};
+use anyhow::{Context, Result, anyhow};
 //use core::time;
 
 const WORKING_DIR: &str = "/tmp/imnet";
 const TERMINAL: &str = "foot";
 const NS_STARTER: &str = "./ns_starter.sh";
 
-pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
-
 pub fn get_topology() -> Result<crate::vde::Topology> {
-    let t = &fs::read_to_string(&format!("{}/topology", WORKING_DIR))?;
+    let t = &fs::read_to_string(&format!("{}/topology", WORKING_DIR)).context(
+        "Reading topology file failed"
+    )?;
     let t = crate::vde::Topology::from_string(t);
 
     Ok(t)
 }
 
 pub fn topology_start() -> Result<()>{
-    let t = get_topology()?;
+    let t = get_topology().context("Getting topology failed")?;
 
     for sw in t.get_switches() {
-        init_dir(sw.base_path(WORKING_DIR))?;
+        let sw_name = sw.get_name();
+        init_dir(sw.base_path(WORKING_DIR)).context(format!(
+            "Initializing base dir for {}", sw_name
+        ))?;
 
         if sw.needs_config() {
             let config = sw.get_config();
             let path = sw.config_path(WORKING_DIR);
-            fs::write(&path, config.join("\n"))?;
+            fs::write(&path, config.join("\n")).context(format!(
+                "Writing config file for {}", sw_name
+            ))?;
         }
 
         let cmd = sw.exec_command();
         let args = sw.exec_args(WORKING_DIR);
 
-        exec(&cmd, args).unwrap();
+        exec(&cmd, args).context(format!(
+            "Starting switch {}", sw_name
+        ))?;
     }
 
     for ns in t.get_namespaces() {
+        let ns_name = ns.get_name();
+
         let cmd = ns.exec_command();
         let mut args = ns.exec_args(WORKING_DIR, NS_STARTER);
 
@@ -40,40 +50,52 @@ pub fn topology_start() -> Result<()>{
 
         // Namespaces need to be started in a new terminal
 
-        exec(TERMINAL, args).unwrap();
+        exec(TERMINAL, args).context(format!(
+            "Starting namespace {}", ns_name
+        ))?;
 
         // Need to configure the namespace
         thread::sleep(std::time::Duration::new(1, 0));
         // The following format i choosen by the ns_starter.sh script
         let pid = fs::read_to_string(&format!("{}/{}.pid", WORKING_DIR, 
-            ns.get_name()))?.trim().to_owned();
+            ns.get_name())).context(format!(
+                "Reading pid file for {}", ns.get_name()
+            ))?.trim().to_owned();
 
         // I don't like the following part. It's too hardcoded
         for (i, el) in ns.get_interfaces().iter().enumerate() {
 
-            ns_exec(&pid, &format!("ip link set vde{} name {}", &i, el.get_name())).unwrap();
+            let interface_name = el.get_name();
+            ns_exec(&pid, &format!("ip link set vde{} name {}", &i, interface_name))
+                .context(format!("Changin name to interface {} on {}", interface_name, ns_name))?;
             thread::sleep(std::time::Duration::from_millis(100));
 
-            ns_exec(&pid, &format!("ip addr add {} dev {}", el.get_ip(), el.get_name())).unwrap();
+            ns_exec(&pid, &format!("ip addr add {} dev {}", el.get_ip(), el.get_name()))
+                .context(format!("Adding ip to interface {} on {}", interface_name, ns_name))?;
             thread::sleep(std::time::Duration::from_millis(100));
 
-            ns_exec(&pid, &format!("ip link set {} up", el.get_name())).unwrap();
+            ns_exec(&pid, &format!("ip link set {} up", el.get_name()))
+                .context(format!("Bringing up interface {} on {}", interface_name, ns_name))?;
+            thread::sleep(std::time::Duration::from_millis(100));
+
+            ns_exec(&pid, "ip link set lo up")
+                .context(format!("Bringing up localhost interface on {}", ns_name))?;
             thread::sleep(std::time::Duration::from_millis(100));
         }
     }
 
-    dbg!("HERE");
-
     for conn in t.get_connections() {
-        init_dir(conn.base_path(WORKING_DIR))?;
+        init_dir(conn.base_path(WORKING_DIR)).context(format!(
+            "Initializing base dir for {}", conn.name
+        ))?;
 
         let cmd = conn.exec_command();
         let args = conn.exec_args(WORKING_DIR);
 
-        exec(&cmd, args).unwrap();
+        exec(&cmd, args).context(format!(
+            "Starting connection {}", conn.name
+        ))?;
     }
-
-    dbg!("HERE 2");
 
     Ok(())
 }
@@ -98,12 +120,7 @@ fn init_dir(path: String) -> Result<()> {
 }
 
 fn exec(cmd: &str, args: Vec<String>) -> Result<()> {
-
-    dbg!(&cmd);
-    dbg!(&args);
-
     process::Command::new(cmd).args(args).spawn()?;
-
     Ok(())
 }
 
@@ -122,7 +139,7 @@ fn ns_exec(pid: &str, command: &str) -> Result<()> {
 
     base_args.extend(args);
 
-    exec(cmd, base_args).unwrap();
+    exec(cmd, base_args).context("Executing command in namespace failed")?;
     Ok(())
 }
 
@@ -143,7 +160,6 @@ pub fn topology_status() -> Result<()> {
     println!("Namespaces:");
     for n in t.get_namespaces() {
         let path = n.pid_path(WORKING_DIR);
-        dbg!(&path);
         if pid_path_is_alive(&path)? {
             println!("{} alive", n.get_name());
         } else {
@@ -155,7 +171,6 @@ pub fn topology_status() -> Result<()> {
 
     for s in t.get_switches() {
         let path = s.pid_path(WORKING_DIR);
-        dbg!(&path);
         if pid_path_is_alive(&path)? {
             println!("{} alive", s.get_name());
         } else {
@@ -167,7 +182,6 @@ pub fn topology_status() -> Result<()> {
 
     for conn in t.get_connections() {
         let path = conn.pid_path(WORKING_DIR);
-        dbg!(&path);
         if pid_path_is_alive(&path)? {
             println!("{} alive", conn.name);
         } else {
@@ -227,23 +241,25 @@ pub fn topology_stop() -> Result<()> {
 
 pub fn attach(device: String) -> Result<()> {
     let t = get_topology()?;
-
-    let DEAD_ERR = "Device not alive";
+    const DEAD_ERR: &str = "Device not alive";
 
     for sw in t.get_switches() {
-        if sw.get_name() == &device {
+        let sw_name = sw.get_name();
+        if sw_name == &device {
             let path = sw.pid_path(WORKING_DIR);
             if pid_path_is_alive(&path)? {
-                let pid = fs::read_to_string(&path)?.trim().parse().unwrap();
+                let pid = fs::read_to_string(&path)?.trim().parse().context(format!(
+                    "Internal error: can't parse pid for switch: {}", sw_name
+                ))?;
                 let cmd = sw.attach_command();
                 let mut args = sw.attach_args(WORKING_DIR, pid);
 
                 args.insert(0, cmd);
 
-                exec(TERMINAL, args).unwrap();
+                exec(TERMINAL, args).context("Executing attach command")?;
                 return Ok(());
             } else {
-                return Err(DEAD_ERR.into());
+                return Err(anyhow!(DEAD_ERR));
             }
         }
     }
@@ -252,15 +268,17 @@ pub fn attach(device: String) -> Result<()> {
         if ns.get_name() == &device {
             let path = ns.pid_path(WORKING_DIR);
             if pid_path_is_alive(&path)? {
-                let pid = fs::read_to_string(&path)?.trim().parse().unwrap();
+                let pid = fs::read_to_string(&path)?.trim().parse().context(format!(
+                    "Internal error: can't parse pid for namespace: {}", ns.get_name()
+                ))?;
                 let cmd = ns.attach_command();
                 let mut args = ns.attach_args(WORKING_DIR, pid);
                 args.insert(0, cmd);
 
-                exec(TERMINAL, args).unwrap();
+                exec(TERMINAL, args).context("Executing attach command")?;
                 return Ok(());
             } else {
-                return Err(DEAD_ERR.into());
+                return Err(anyhow!(DEAD_ERR));
             }
         } 
     }
@@ -274,13 +292,13 @@ pub fn attach(device: String) -> Result<()> {
 
                 args.insert(0, cmd);
 
-                exec(TERMINAL, args).unwrap();
+                exec(TERMINAL, args).context("Executing attach command")?;
                 return Ok(());
             } else {
-                return Err(DEAD_ERR.into());
+                return Err(anyhow!(DEAD_ERR));
             }
         }
     }
 
-    Err("Device not found".into())
+    Err(anyhow!("Device not found"))
 }
