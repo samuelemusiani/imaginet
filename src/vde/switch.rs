@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use super::{MGMT_FILE_NAME, PID_FILE_NAME, SOCK_FILE_NAME};
 use serde::{Serialize, Deserialize};
 
-const DEFAULT_PORTS: u32 = 10;
+const DEFAULT_PORTS: u32 = 32;
 
 /// This is the internal rappresentation of a switch
 
