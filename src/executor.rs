@@ -228,6 +228,8 @@ pub fn topology_stop() -> Result<()> {
 pub fn attach(device: String) -> Result<()> {
     let t = get_topology()?;
 
+    let DEAD_ERR = "Device not alive";
+
     for sw in t.get_switches() {
         if sw.get_name() == &device {
             let path = sw.pid_path(WORKING_DIR);
@@ -240,6 +242,8 @@ pub fn attach(device: String) -> Result<()> {
 
                 exec(TERMINAL, args).unwrap();
                 return Ok(());
+            } else {
+                return Err(DEAD_ERR.into());
             }
         }
     }
@@ -255,15 +259,25 @@ pub fn attach(device: String) -> Result<()> {
 
                 exec(TERMINAL, args).unwrap();
                 return Ok(());
+            } else {
+                return Err(DEAD_ERR.into());
             }
-        }
+        } 
     }
 
     for conn in t.get_connections() {
         if conn.name == device {
             let path = conn.pid_path(WORKING_DIR);
             if pid_path_is_alive(&path)? {
-                return Err("Can't attach to a connection".into());
+                let cmd = conn.attach_command()?;
+                let mut args = conn.attach_args(WORKING_DIR)?;
+
+                args.insert(0, cmd);
+
+                exec(TERMINAL, args).unwrap();
+                return Ok(());
+            } else {
+                return Err(DEAD_ERR.into());
             }
         }
     }

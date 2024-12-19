@@ -124,7 +124,7 @@ fn config_to_vde_topology(c: config::Config) -> vde::Topology {
             let endp_b = vde::calculate_endpoint_type(&t, &c.endpoint_b.name);
             let port_b = c.endpoint_b.port;
             let conn = vde::Connection::new(
-                c.name.clone(), endp_a, port_a, endp_b, port_b);
+                c.name.clone(), endp_a, port_a, endp_b, port_b, c.wirefilter);
             t.add_connection(conn);
         }
     }
