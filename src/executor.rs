@@ -1,7 +1,7 @@
 use std::{fs, process, thread};
 //use core::time;
 
-const WORKING_DIR: &str = "/tmp/rsnet";
+const WORKING_DIR: &str = "/tmp/imnet";
 const TERMINAL: &str = "foot";
 const NS_STARTER: &str = "./ns_starter.sh";
 
