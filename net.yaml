@@ -1,6 +1,8 @@
 switch:
   - name: sw1
     # config: ./sw1.conf
+    # Default to 32 ports
+    #ports: 2
 
   - name: sw2
 
@@ -8,45 +10,50 @@ namespace:
   - name: ns1
     interfaces: 
       - name: eth0
-        endpoint: sw1
-        # If port is specified i should use vde_plug
         ip: 10.0.0.1/24
+        endpoint: 
+          name: sw1
 
       # - name: eth1
       #   endpoint: sw1
-      #   # port:  2
-      #   # If port is specified i should use vde_plug
-      #   ip: 10.0.0.2/24
-#
-#       - name: eth1
-#         endpoint: sw2
-#         ip: 10.0.0.2/24
-#         #ips:
-#         #  - 10.0.0.1/24
-#     commands:
-#       -
-#       - 
-#       -
-#       -
-#     script: ....
+      #   port: 2
+      #   ip: 10.1.0.1/24
 
   - name: ns2
     interfaces:
       - name: eth0
-        endpoint: sw2
+        endpoint: 
+          name: sw2
         ip: 10.0.0.2/24
-#
-#   # - name: ns3
-#   #   connected: sw2
-#   #   ip: 192.168.1.1/24
-#   #
-#   # - name: ns4
-#   #   connected: sw1
-#   #   ip: 192.168.1.2/24
+
+  # - name: ns3
+  #   interfaces:
+  #     - name: eth0
+  #       endpoint: sw1
+  #       port: 20
+  #       ip: 10.1.0.2/24
+
+  # - name: ns3
+  #   interfaces: 
+  #     - name: eth0
+  #       endpoint: sw2
+  #       # If port is specified i should use vde_plug
+  #       ip: 10.1.0.1/24
+  #
+  # - name: ns4
+  #   interfaces: 
+  #     - name: eth0
+  #       endpoint: sw2
+  #       # If port is specified i should use vde_plug
+  #       ip: 10.1.0.2/24
+
 #
 connections:
   - name: conn1
-    a:  sw1
-    port_a: 10
-    b:  sw2
-    port_b: 20
+    endpoint_a:
+      name: sw1
+      port: 4
+    endpoint_b:
+      name: sw2
+      port: 5
+    wirefilter: true

@@ -1,17 +1,22 @@
-use std::{fmt::format, path::PathBuf};
+use std::path::PathBuf;
 use super::{MGMT_FILE_NAME, PID_FILE_NAME, SOCK_FILE_NAME};
+use serde::{Serialize, Deserialize};
+
+const DEFAULT_PORTS: u32 = 32;
 
 /// This is the internal rappresentation of a switch
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Switch {
     /// The name should be unique
     name: String,
     config: Vec<String>,
+    ports: u32,
 }
 
 impl Switch {
     pub fn new(name: String) -> Switch {
-        Switch { name, config: Vec::new() }
+        Switch { name, config: Vec::new(), ports: DEFAULT_PORTS }
     }
 
     pub fn get_name(&self) -> &str {
@@ -20,6 +25,10 @@ impl Switch {
 
     pub fn add_config(&mut self, config: String) {
         self.config.push(config);
+    }
+
+    pub fn set_ports(&mut self, ports: u32) {
+        self.ports = ports;
     }
 
     pub fn get_config(&self) -> &Vec<String> {
@@ -69,7 +78,17 @@ impl Switch {
             "--mgmt".to_owned(), mgmt_p, 
             "--sock".to_owned(), sock_p,
             "--rcfile".to_owned(), conf_p,
+            "--numports".to_owned(), self.ports.to_string(),
             "--daemon".to_owned()]
+    }
+
+    pub fn attach_command(&self) -> String {
+        String::from("vdeterm")
+    }
+
+    pub fn attach_args(&self, base: &str, _pid: u32) -> Vec<String> {
+        let sock_p = self.mgmt_path(base);
+        vec![sock_p]
     }
 }
 

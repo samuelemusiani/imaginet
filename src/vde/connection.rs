@@ -1,22 +1,27 @@
-use super::PID_FILE_NAME;
+use super::{MGMT_FILE_NAME, PID_FILE_NAME};
 use std::path::PathBuf;
+use serde::{Serialize, Deserialize};
+use anyhow::Result;
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Connection {
     pub name: String,
     pub a: String,
     pub port_a: Option<u32>,
     pub b: String,
     pub port_b: Option<u32>,
+    pub wirefilter: bool,
 }
 
 impl Connection {
-    pub fn new(name: String, a: String, port_a: Option<u32>, b: String, port_b: Option<u32>) -> Connection {
+    pub fn new(name: String, a: String, port_a: Option<u32>, b: String, port_b: Option<u32>, wirefilter: Option<bool>) -> Connection {
         Connection {
             name,
             a,
             port_a,
             b,
             port_b,
+            wirefilter: wirefilter.unwrap_or(false),
         }
     }
 
@@ -28,8 +33,22 @@ impl Connection {
         PathBuf::from(self.base_path(base)).join(PID_FILE_NAME).to_str().unwrap().to_owned()
     }
 
+    pub fn mgmt_path(&self, base: &str) -> Result<String> {
+        if !self.wirefilter {
+            return Err(anyhow::anyhow!(
+                "No wirefilter connection. Can't have a management file"
+            ));
+        }
+        Ok(PathBuf::from(self.base_path(base))
+            .join(MGMT_FILE_NAME).to_str().unwrap().to_owned())
+    }
+
     pub fn exec_command(&self) -> String {
-        String::from("vde_plug")
+        if self.wirefilter {
+            String::from("wirefilter")
+        } else {
+            String::from("vde_plug")
+        }
     }
 
     pub fn exec_args(&self, base: &str) -> Vec<String> {
@@ -45,11 +64,44 @@ impl Connection {
             pb.push_str(&format!("[{port}]"));
         }
 
-        return vec!(
-            pa, pb,
-            "--pidfile".to_owned(), self.pid_path(base),
-            "--descr".to_owned(), self.name.to_owned(),
-            "--daemon".to_owned()
-        );
+        let pid_p = self.pid_path(base);
+
+        if self.wirefilter {
+            let mgmt_p = self.mgmt_path(base).unwrap();
+            vec!(
+                "--vde-plug".to_owned(), format!("{pa}:{pb}"),
+                "--pidfile".to_owned(), pid_p,
+                "--mgmt".to_owned(), mgmt_p,
+                "--daemon".to_owned()
+            )
+        } else {
+            vec!(
+                pa, pb,
+                "--pidfile".to_owned(), self.pid_path(base),
+                "--descr".to_owned(), self.name.to_owned(),
+                "--daemon".to_owned()
+            )
+        }
+    }
+
+    pub fn attach_command(&self) -> Result<String> {
+        if self.wirefilter {
+            Ok(String::from("vdeterm"))
+        } else {
+            Err(anyhow::anyhow!(
+                "Simple connections (no wirefilter) can't be attached"
+            ))
+        }
+    }
+
+    pub fn attach_args(&self, base: &str) -> Result<Vec<String>> {
+        if self.wirefilter {
+            let socke_p = self.mgmt_path(base)?;
+            Ok(vec![socke_p])
+        } else {
+            Err(anyhow::anyhow!(
+                "Simple connections (no wirefilter) can't be attached"
+            ))
+        }
     }
 }

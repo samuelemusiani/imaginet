@@ -1,10 +1,13 @@
 use std::path::PathBuf;
+use serde::{Serialize, Deserialize};
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Namespace {
     name: String,
     interfaces: Vec<NSInterface>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct NSInterface {
     name: String,
     ip: String,
@@ -34,6 +37,11 @@ impl Namespace {
         self.interfaces.push(interface);
     }
 
+    pub fn pid_path(&self, base: &str) -> String {
+        // Path is written by the ns_starter.sh script
+        PathBuf::from(base).join(&format!("{}.pid", &self.name)).to_str().unwrap().to_owned()
+    }
+
     pub fn exec_command(&self) -> String {
         "vdens".to_owned()
     }
@@ -58,6 +66,20 @@ impl Namespace {
         args.push(base.to_owned());
         args.push(self.name.to_owned());
         return args;
+    }
+
+    pub fn attach_command(&self) -> String {
+        "nsenter".to_owned()
+    }
+
+    pub fn attach_args(&self, _base: &str, pid: u32) -> Vec<String> {
+        vec!(
+            "-t".to_owned(), pid.to_string(),
+            "--preserve-credentials".to_owned(),
+            "-U".to_owned(),
+            "-n".to_owned(),
+            "--keep-caps".to_owned(),
+        )
     }
 }
 
