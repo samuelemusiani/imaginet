@@ -46,12 +46,19 @@ impl Namespace {
         "vdens".to_owned()
     }
 
+    /// base: base path for the working directory.
+    /// starter: the name of the starter script that will perform pid writing
     pub fn exec_args(&self, base: &str, starter: &str) -> Vec<String> {
         if self.interfaces.len() == 0 {
             return vec!();
         } 
 
-        let mut args = vec!("--multi".to_owned());
+        let name = self.get_name().to_owned();
+        let mut args = vec!(
+            "--hostname".to_owned(), name.clone(),
+            "--multi".to_owned()
+        );
+
         let b = PathBuf::from(base);
         for i in &self.interfaces {
             let p = b.join(&i.endpoint).to_str().unwrap().to_owned();
@@ -61,10 +68,12 @@ impl Namespace {
                 args.push(p);
             }
         }
-        args.push("--".to_owned());
-        args.push(starter.to_owned());
-        args.push(base.to_owned());
-        args.push(self.name.to_owned());
+
+        let mut args2 = vec!(
+            "--".to_owned(), 
+            starter.to_owned(), base.to_owned(), name
+        );
+        args.append(&mut args2);
         return args;
     }
 
