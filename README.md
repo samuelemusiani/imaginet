@@ -40,15 +40,40 @@ vdeplug4 ?
 
 # TODO
 
-rsnet ps --> Comando per controllare lo stato della rete? (Più che
-    altro va risolto il problema degli switch che rimangono nel sistema
-    avendoli messi come demoni). PID FILE!!
+imaginet exec -> Eseguire un comanod in uno switch/router con il socket di management.
+imaginet add -> Aggiungere un componente alla rete corrente.
+imaginet rm -> Aggiungere un componente alla rete corrente.
+imaginet dump -> Dump della rete corrente in file di configurazione.
+imaginet stop _ -> Stoppare un determinato componente della rete.
+imaginet start _ -> Far partire un determinato componente della rete se fermato.
+imaginet clear -> Pulire la topologia corrente. (Fa anche stop).
 
-rsnet exec -> Eseguire un comanod in uno switch/router con il socket di
-    management
+Il comando stop dovrebbe chiudere dolcemente tutto senza killare il pid :)
 
-Aggiungere quello che manda: router, cavi, vdeplug vari ed eventuali
+Wirefilter configurato con un file.
 
-Fare in modo che tutto possa essere configurabile da file (+ inline?)
+Stop non controlla se la roba si ferma realmente.
 
-Si può collegare alla porta 10 dello switch con 'vde:///tmp/sw1[10]'
+Aggiungere quello che manda: router, vdeplug vari ed eventuali
+
+Aggiungere la modalità verbosa (-v -vv -vvv) per debuggare.
+
+Iniline execution per attach (fare in modo che il comando non apra un nuovo terminale)
+
+vdens in background? In modo da poter eseguire anche su macchine remote.
+
+Aggiungere la possibilità di avere switch hub (non devono aprire il manegement?)
+
+Fare in modo che tutto possa essere configurabile da file: inline dei comandi
+di configurazione sia per switch che ns, ecc. Per vdens si può fare post-up, pre-up ad interfaccia
+
+Check per vedere che tutti gli eseguibili siano presenti. (Check sulla versione?)
+
+Aggiungere parametri arbitrari ai comandi per future implementazioni (senza dover
+aggiornare per forza anche il codice di imaginet).
+
+Generalizzare il terminale (no foot) :)
+
+Fare test?
+
+Più topologie?
