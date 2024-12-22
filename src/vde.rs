@@ -2,6 +2,8 @@ pub use switch::Switch;
 pub use namespace::{Namespace, NSInterface};
 pub use connection::Connection;
 use serde::{Serialize, Deserialize};
+use anyhow::{Context, Result};
+
 mod switch;
 mod namespace;
 mod connection;
@@ -57,8 +59,10 @@ impl Topology {
         serde_yaml::to_string(self).unwrap()
     }
 
-    pub fn from_string(file: &str) -> Topology {
-        serde_yaml::from_str(&file).unwrap()
+    pub fn from_string(file: &str) -> Result<Topology> {
+        serde_yaml::from_str(&file)
+            .map_err(anyhow::Error::new)
+            .context("Parsing topology file")
     }
 }
 

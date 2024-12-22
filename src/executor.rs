@@ -7,27 +7,25 @@ const TERMINAL: &str = "foot";
 const NS_STARTER: &str = "./ns_starter.sh";
 
 pub fn get_topology() -> Result<crate::vde::Topology> {
-    let t = &fs::read_to_string(&format!("{}/topology", WORKING_DIR)).context(
-        "Reading topology file failed"
-    )?;
-    let t = crate::vde::Topology::from_string(t);
+    let path = format!("{WORKING_DIR}/topology");
+    let t = match fs::read_to_string(&path) {
+        Ok(t) => t,
+        Err(e) => {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                return Err(anyhow!(format!("Topology file not found in path: {path}. Have you created a topology?")));
+            };
+            return Err(e.into());
+        }
+    };
+
+    let t = crate::vde::Topology::from_string(&t)
+        .context("Converting file into topology")?;
 
     Ok(t)
 }
 
 pub fn topology_start() -> Result<()>{
-    let t = match get_topology() { 
-        Ok(t) => t,
-        Err(e) => {
-            let mut s = String::from("Getting topology failed.");
-            if let Some(ioe) = e.downcast_ref::<std::io::Error>() {
-                if ioe.kind() == std::io::ErrorKind::NotFound {
-                    s.push_str(" Have you created a topology?");
-                }
-            }
-            return Err(e.context(s));
-        }
-    };
+    let t = get_topology().context("Gettin topology")?;
 
     for sw in t.get_switches() {
         let sw_name = sw.get_name();
@@ -165,7 +163,7 @@ pub fn write_topology(t: crate::vde::Topology) -> Result<()> {
 }
 
 pub fn topology_status() -> Result<()> {
-    let t = get_topology()?;
+    let t = get_topology().context("Gettin topology")?;
 
     println!("--- Topology status ---");
     println!("Namespaces:");
@@ -220,7 +218,7 @@ fn pid_is_alive(pid: &str) -> bool {
 }
 
 pub fn topology_stop() -> Result<()> {
-    let t = get_topology()?;
+    let t = get_topology().context("Gettin topology")?;
 
     for sw in t.get_switches() {
         let path = sw.pid_path(WORKING_DIR);
@@ -251,7 +249,7 @@ pub fn topology_stop() -> Result<()> {
 }
 
 pub fn attach(device: String) -> Result<()> {
-    let t = get_topology()?;
+    let t = get_topology().context("Gettin topology")?;
     const DEAD_ERR: &str = "Device not alive";
 
     for sw in t.get_switches() {
