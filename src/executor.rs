@@ -16,7 +16,18 @@ pub fn get_topology() -> Result<crate::vde::Topology> {
 }
 
 pub fn topology_start() -> Result<()>{
-    let t = get_topology().context("Getting topology failed")?;
+    let t = match get_topology() { 
+        Ok(t) => t,
+        Err(e) => {
+            let mut s = String::from("Getting topology failed.");
+            if let Some(ioe) = e.downcast_ref::<std::io::Error>() {
+                if ioe.kind() == std::io::ErrorKind::NotFound {
+                    s.push_str(" Have you created a topology?");
+                }
+            }
+            return Err(e.context(s));
+        }
+    };
 
     for sw in t.get_switches() {
         let sw_name = sw.get_name();
