@@ -27,11 +27,11 @@ enum Commands {
         config: String
     },
 
-    #[command(about = "Start a topology")]  
+    #[command(about = "Start a topology")]
     Start {
     },
 
-    #[command(about = "Status of running topology")]  
+    #[command(about = "Status of running topology")]
     Status {
     },
 
@@ -78,6 +78,8 @@ fn create(config: String) -> Result<()> {
 
             //executor::start(t).unwrap();
             executor::write_topology(t).unwrap();
+
+            let _ = executor::topology_status();
         }
     };
 

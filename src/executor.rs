@@ -1,5 +1,6 @@
 use std::{fs, process, thread};
 use anyhow::{Context, Result, anyhow};
+use colored::Colorize;
 //use core::time;
 
 const WORKING_DIR: &str = "/tmp/imnet";
@@ -57,7 +58,7 @@ pub fn topology_start() -> Result<()>{
         // Need to configure the namespace
         thread::sleep(std::time::Duration::new(1, 0));
         // The following format i choosen by the ns_starter.sh script
-        let pid = fs::read_to_string(&format!("{}/{}.pid", WORKING_DIR, 
+        let pid = fs::read_to_string(&format!("{}/{}.pid", WORKING_DIR,
             ns.get_name())).context(format!(
                 "Reading pid file for {}", ns.get_name()
             ))?.trim().to_owned();
@@ -127,8 +128,8 @@ fn exec(cmd: &str, args: Vec<String>) -> Result<()> {
 fn ns_exec(pid: &str, command: &str) -> Result<()> {
     let cmd = "nsenter";
     let mut base_args = vec!(
-        "-t".to_owned(), pid.to_owned(), 
-        "--preserve-credentials".to_owned(), 
+        "-t".to_owned(), pid.to_owned(),
+        "--preserve-credentials".to_owned(),
         "-U".to_owned(), "-n".to_owned(),
         "--keep-caps".to_owned(),
     );
@@ -145,10 +146,12 @@ fn ns_exec(pid: &str, command: &str) -> Result<()> {
 
 pub fn write_topology(t: crate::vde::Topology) -> Result<()> {
     init()?;
-    
+
     let t = t.to_string();
 
     fs::write(&format!("{}/topology", WORKING_DIR), t)?;
+
+    println!("{}", "--- Topology created ---\n".bold());
 
     Ok(())
 }
@@ -156,36 +159,36 @@ pub fn write_topology(t: crate::vde::Topology) -> Result<()> {
 pub fn topology_status() -> Result<()> {
     let t = get_topology()?;
 
-    println!("--- Topology status ---");
-    println!("Namespaces:");
+    println!("{}", "--- Topology status ---".bold().blink());
+    println!("{}:", "Namespaces".bold());
     for n in t.get_namespaces() {
         let path = n.pid_path(WORKING_DIR);
         if pid_path_is_alive(&path)? {
-            println!("{} alive", n.get_name());
+            println!("- {} {}", n.get_name(), "alive".green());
         } else {
-            println!("{} dead", n.get_name());
+            println!("- {} {}", n.get_name(), "dead".red());
         }
     };
 
-    println!("\nSwitches:");
+    println!("\n{}:", "Switches".bold());
 
     for s in t.get_switches() {
         let path = s.pid_path(WORKING_DIR);
         if pid_path_is_alive(&path)? {
-            println!("{} alive", s.get_name());
+            println!("- {} {}", s.get_name(), "alive".green());
         } else {
-            println!("{} dead", s.get_name());
+            println!("- {} {}", s.get_name(), "dead".red());
         }
     };
 
-    println!("\nConnections:");
+    println!("\n{}:", "Connections".bold());
 
     for conn in t.get_connections() {
         let path = conn.pid_path(WORKING_DIR);
         if pid_path_is_alive(&path)? {
-            println!("{} alive", conn.name);
+            println!("- {} {}", conn.name, "alive".green());
         } else {
-            println!("{} dead", conn.name);
+            println!("- {} {}", conn.name, "dead".red());
         }
     };
 
@@ -280,7 +283,7 @@ pub fn attach(device: String) -> Result<()> {
             } else {
                 return Err(anyhow!(DEAD_ERR));
             }
-        } 
+        }
     }
 
     for conn in t.get_connections() {
