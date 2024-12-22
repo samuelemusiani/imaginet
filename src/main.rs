@@ -47,13 +47,21 @@ mod executor;
 fn main() -> Result<()> {
     let args = Args::parse();
 
+    // Options for the executor
+    let opts = executor::Options {
+        // Terminal to open when starting or attaching to a device
+        terminal: "foot".to_owned(),
+        // Working directory for all the imaginet files
+        working_dir: "/tmp/imnet".to_owned(),
+    };
+
     match args.command {
         Some(command) => match command {
-            Commands::Create { config } => create(config)?,
-            Commands::Start {} => executor::topology_start()?,
-            Commands::Status {} => executor::topology_status()?,
-            Commands::Stop {} => executor::topology_stop()?,
-            Commands::Attach { device } => executor::attach(device)?,
+            Commands::Create { config } => create(opts, config)?,
+            Commands::Start {} => executor::topology_start(opts)?,
+            Commands::Status {} => executor::topology_status(opts)?,
+            Commands::Stop {} => executor::topology_stop(opts)?,
+            Commands::Attach { device } => executor::attach(opts, device)?,
         } None => {
             eprintln!("No command provided");
             process::exit(1);
@@ -63,7 +71,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn create(config: String) -> Result<()> {
+fn create(opts: executor::Options, config: String) -> Result<()> {
     let file = fs::read_to_string(config)
         .context("Reading config file")?;
 
@@ -72,7 +80,7 @@ fn create(config: String) -> Result<()> {
 
     let t = config_to_vde_topology(c);
 
-    executor::write_topology(t)?;
+    executor::write_topology(opts, t)?;
 
     Ok(())
 }
