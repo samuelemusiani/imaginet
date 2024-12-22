@@ -55,8 +55,8 @@ impl Topology {
         &self.connections
     }
 
-    pub fn to_string(&self) -> String {
-        serde_yaml::to_string(self).unwrap()
+    pub fn to_string(&self) -> Result<String> {
+        serde_yaml::to_string(self).map_err(anyhow::Error::new)
     }
 
     pub fn from_string(file: &str) -> Result<Topology> {

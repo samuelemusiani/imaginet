@@ -1,5 +1,5 @@
 use std::{fs, process};
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 use clap::Parser;
 
@@ -64,22 +64,15 @@ fn main() -> Result<()> {
 }
 
 fn create(config: String) -> Result<()> {
-    let file = fs::read_to_string(config);
+    let file = fs::read_to_string(config)
+        .context("Reading config file")?;
 
-    match file {
-        Err(e) => {
-            eprintln!("Error opening file {}", e);
-            process::exit(1);
-        }
-        Ok(file) => {
-            let c = config::Config::from_string(&file)?;
+    let c = config::Config::from_string(&file)
+        .context("Parsing config")?;
 
-            let t = config_to_vde_topology(c);
+    let t = config_to_vde_topology(c);
 
-            //executor::start(t).unwrap();
-            executor::write_topology(t).unwrap();
-        }
-    };
+    executor::write_topology(t)?;
 
     Ok(())
 }

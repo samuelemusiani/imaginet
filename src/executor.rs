@@ -153,11 +153,13 @@ fn ns_exec(pid: &str, command: &str) -> Result<()> {
 }
 
 pub fn write_topology(t: crate::vde::Topology) -> Result<()> {
-    init()?;
+    init().context("Initializing executor")?;
     
-    let t = t.to_string();
+    let t = t.to_string().context("Converting topology to string")?;
 
-    fs::write(&format!("{}/topology", WORKING_DIR), t)?;
+    let path = &format!("{}/topology", WORKING_DIR);
+    fs::write(&path, t)
+        .context(format!("Writing topology on file {path}"))?;
 
     Ok(())
 }
