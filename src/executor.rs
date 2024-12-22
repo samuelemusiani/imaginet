@@ -1,5 +1,5 @@
+use anyhow::{anyhow, Context, Result};
 use std::{fs, process, thread};
-use anyhow::{Context, Result, anyhow};
 //use core::time;
 
 const NS_STARTER: &str = "./ns_starter.sh";
@@ -15,41 +15,38 @@ pub fn get_topology(opts: &Options) -> Result<crate::vde::Topology> {
         Ok(t) => t,
         Err(e) => {
             if e.kind() == std::io::ErrorKind::NotFound {
-                return Err(anyhow!(format!("Topology file not found in path: {path}. Have you created a topology?")));
+                return Err(anyhow!(format!(
+                    "Topology file not found in path: {path}. Have you created a topology?"
+                )));
             };
             return Err(e.into());
         }
     };
 
-    let t = crate::vde::Topology::from_string(&t)
-        .context("Converting file into topology")?;
+    let t = crate::vde::Topology::from_string(&t).context("Converting file into topology")?;
 
     Ok(t)
 }
 
-pub fn topology_start(opts: Options) -> Result<()>{
+pub fn topology_start(opts: Options) -> Result<()> {
     let t = get_topology(&opts).context("Gettin topology")?;
 
     for sw in t.get_switches() {
         let sw_name = sw.get_name();
-        init_dir(sw.base_path(&opts.working_dir)).context(format!(
-            "Initializing base dir for {}", sw_name
-        ))?;
+        init_dir(sw.base_path(&opts.working_dir))
+            .context(format!("Initializing base dir for {}", sw_name))?;
 
         if sw.needs_config() {
             let config = sw.get_config();
             let path = sw.config_path(&opts.working_dir);
-            fs::write(&path, config.join("\n")).context(format!(
-                "Writing config file for {}", sw_name
-            ))?;
+            fs::write(&path, config.join("\n"))
+                .context(format!("Writing config file for {}", sw_name))?;
         }
 
         let cmd = sw.exec_command();
         let args = sw.exec_args(&opts.working_dir);
 
-        exec(&cmd, args).context(format!(
-            "Starting switch {}", sw_name
-        ))?;
+        exec(&cmd, args).context(format!("Starting switch {}", sw_name))?;
     }
 
     for ns in t.get_namespaces() {
@@ -62,32 +59,44 @@ pub fn topology_start(opts: Options) -> Result<()>{
 
         // Namespaces need to be started in a new terminal
 
-        exec(&opts.terminal, args).context(format!(
-            "Starting namespace {}", ns_name
-        ))?;
+        exec(&opts.terminal, args).context(format!("Starting namespace {}", ns_name))?;
 
         // Need to configure the namespace
         thread::sleep(std::time::Duration::new(1, 0));
         // The following format i choosen by the ns_starter.sh script
         let path = format!("{}/{}.pid", &opts.working_dir, ns.get_name());
-        let pid = fs::read_to_string(&path).context(format!(
-                "Reading pid file for {}", ns.get_name()
-            ))?.trim().to_owned();
+        let pid = fs::read_to_string(&path)
+            .context(format!("Reading pid file for {}", ns.get_name()))?
+            .trim()
+            .to_owned();
 
         // I don't like the following part. It's too hardcoded
         for (i, el) in ns.get_interfaces().iter().enumerate() {
-
             let interface_name = el.get_name();
-            ns_exec(&pid, &format!("ip link set vde{} name {}", &i, interface_name))
-                .context(format!("Changin name to interface {} on {}", interface_name, ns_name))?;
+            ns_exec(
+                &pid,
+                &format!("ip link set vde{} name {}", &i, interface_name),
+            )
+            .context(format!(
+                "Changin name to interface {} on {}",
+                interface_name, ns_name
+            ))?;
             thread::sleep(std::time::Duration::from_millis(100));
 
-            ns_exec(&pid, &format!("ip addr add {} dev {}", el.get_ip(), el.get_name()))
-                .context(format!("Adding ip to interface {} on {}", interface_name, ns_name))?;
+            ns_exec(
+                &pid,
+                &format!("ip addr add {} dev {}", el.get_ip(), el.get_name()),
+            )
+            .context(format!(
+                "Adding ip to interface {} on {}",
+                interface_name, ns_name
+            ))?;
             thread::sleep(std::time::Duration::from_millis(100));
 
-            ns_exec(&pid, &format!("ip link set {} up", el.get_name()))
-                .context(format!("Bringing up interface {} on {}", interface_name, ns_name))?;
+            ns_exec(&pid, &format!("ip link set {} up", el.get_name())).context(format!(
+                "Bringing up interface {} on {}",
+                interface_name, ns_name
+            ))?;
             thread::sleep(std::time::Duration::from_millis(100));
 
             ns_exec(&pid, "ip link set lo up")
@@ -97,16 +106,13 @@ pub fn topology_start(opts: Options) -> Result<()>{
     }
 
     for conn in t.get_connections() {
-        init_dir(conn.base_path(&opts.working_dir)).context(format!(
-            "Initializing base dir for {}", conn.name
-        ))?;
+        init_dir(conn.base_path(&opts.working_dir))
+            .context(format!("Initializing base dir for {}", conn.name))?;
 
         let cmd = conn.exec_command();
         let args = conn.exec_args(&opts.working_dir);
 
-        exec(&cmd, args).context(format!(
-            "Starting connection {}", conn.name
-        ))?;
+        exec(&cmd, args).context(format!("Starting connection {}", conn.name))?;
     }
 
     Ok(())
@@ -138,14 +144,17 @@ fn exec(cmd: &str, args: Vec<String>) -> Result<()> {
 
 fn ns_exec(pid: &str, command: &str) -> Result<()> {
     let cmd = "nsenter";
-    let mut base_args = vec!(
-        "-t".to_owned(), pid.to_owned(), 
-        "--preserve-credentials".to_owned(), 
-        "-U".to_owned(), "-n".to_owned(),
+    let mut base_args = vec![
+        "-t".to_owned(),
+        pid.to_owned(),
+        "--preserve-credentials".to_owned(),
+        "-U".to_owned(),
+        "-n".to_owned(),
         "--keep-caps".to_owned(),
-    );
+    ];
 
-    let args = command.split_whitespace()
+    let args = command
+        .split_whitespace()
         .map(|s| s.to_owned())
         .collect::<Vec<String>>();
 
@@ -157,12 +166,11 @@ fn ns_exec(pid: &str, command: &str) -> Result<()> {
 
 pub fn write_topology(opts: Options, t: crate::vde::Topology) -> Result<()> {
     init(&opts).context("Initializing executor")?;
-    
+
     let t = t.to_string().context("Converting topology to string")?;
 
     let path = &format!("{}/topology", &opts.working_dir);
-    fs::write(&path, t)
-        .context(format!("Writing topology on file {path}"))?;
+    fs::write(&path, t).context(format!("Writing topology on file {path}"))?;
 
     Ok(())
 }
@@ -179,7 +187,7 @@ pub fn topology_status(opts: Options) -> Result<()> {
         } else {
             println!("{} dead", n.get_name());
         }
-    };
+    }
 
     println!("\nSwitches:");
 
@@ -190,7 +198,7 @@ pub fn topology_status(opts: Options) -> Result<()> {
         } else {
             println!("{} dead", s.get_name());
         }
-    };
+    }
 
     println!("\nConnections:");
 
@@ -201,7 +209,7 @@ pub fn topology_status(opts: Options) -> Result<()> {
         } else {
             println!("{} dead", conn.name);
         }
-    };
+    }
 
     Ok(())
 }
@@ -213,13 +221,19 @@ fn pid_path_is_alive(path: &str) -> Result<bool> {
     let pid = fs::read_to_string(path)?;
     let pid = pid.trim();
 
-    return Ok(pid_is_alive(pid))
+    return Ok(pid_is_alive(pid));
 }
 
 fn pid_is_alive(pid: &str) -> bool {
     // To check if a pid is alive we could use the kill syscall.
     // Or we could use the ps command
-    process::Command::new("ps").arg("-p").arg(pid).output().unwrap().status.success()
+    process::Command::new("ps")
+        .arg("-p")
+        .arg(pid)
+        .output()
+        .unwrap()
+        .status
+        .success()
 }
 
 pub fn topology_stop(opts: Options) -> Result<()> {
@@ -263,15 +277,15 @@ pub fn attach(opts: Options, device: String) -> Result<()> {
             let path = sw.pid_path(&opts.working_dir);
             if pid_path_is_alive(&path)? {
                 let pid = fs::read_to_string(&path)?.trim().parse().context(format!(
-                    "Internal error: can't parse pid for switch: {}", sw_name
+                    "Internal error: can't parse pid for switch: {}",
+                    sw_name
                 ))?;
                 let cmd = sw.attach_command();
                 let mut args = sw.attach_args(&opts.working_dir, pid);
 
                 args.insert(0, cmd);
 
-                exec(&opts.terminal, args)
-                    .context("Executing attach command")?;
+                exec(&opts.terminal, args).context("Executing attach command")?;
                 return Ok(());
             } else {
                 return Err(anyhow!(DEAD_ERR));
@@ -284,19 +298,19 @@ pub fn attach(opts: Options, device: String) -> Result<()> {
             let path = ns.pid_path(&opts.working_dir);
             if pid_path_is_alive(&path)? {
                 let pid = fs::read_to_string(&path)?.trim().parse().context(format!(
-                    "Internal error: can't parse pid for namespace: {}", ns.get_name()
+                    "Internal error: can't parse pid for namespace: {}",
+                    ns.get_name()
                 ))?;
                 let cmd = ns.attach_command();
                 let mut args = ns.attach_args(&opts.working_dir, pid);
                 args.insert(0, cmd);
 
-                exec(&opts.terminal, args)
-                    .context("Executing attach command")?;
+                exec(&opts.terminal, args).context("Executing attach command")?;
                 return Ok(());
             } else {
                 return Err(anyhow!(DEAD_ERR));
             }
-        } 
+        }
     }
 
     for conn in t.get_connections() {
@@ -308,8 +322,7 @@ pub fn attach(opts: Options, device: String) -> Result<()> {
 
                 args.insert(0, cmd);
 
-                exec(&opts.terminal, args)
-                    .context("Executing attach command")?;
+                exec(&opts.terminal, args).context("Executing attach command")?;
                 return Ok(());
             } else {
                 return Err(anyhow!(DEAD_ERR));

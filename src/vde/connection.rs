@@ -1,7 +1,7 @@
 use super::{MGMT_FILE_NAME, PID_FILE_NAME};
-use std::path::PathBuf;
-use serde::{Serialize, Deserialize};
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Connection {
@@ -14,7 +14,14 @@ pub struct Connection {
 }
 
 impl Connection {
-    pub fn new(name: String, a: String, port_a: Option<u32>, b: String, port_b: Option<u32>, wirefilter: Option<bool>) -> Connection {
+    pub fn new(
+        name: String,
+        a: String,
+        port_a: Option<u32>,
+        b: String,
+        port_b: Option<u32>,
+        wirefilter: Option<bool>,
+    ) -> Connection {
         Connection {
             name,
             a,
@@ -26,11 +33,19 @@ impl Connection {
     }
 
     pub fn base_path(&self, base: &str) -> String {
-        PathBuf::from(base).join(&self.name).to_str().unwrap().to_owned()
+        PathBuf::from(base)
+            .join(&self.name)
+            .to_str()
+            .unwrap()
+            .to_owned()
     }
 
     pub fn pid_path(&self, base: &str) -> String {
-        PathBuf::from(self.base_path(base)).join(PID_FILE_NAME).to_str().unwrap().to_owned()
+        PathBuf::from(self.base_path(base))
+            .join(PID_FILE_NAME)
+            .to_str()
+            .unwrap()
+            .to_owned()
     }
 
     pub fn mgmt_path(&self, base: &str) -> Result<String> {
@@ -40,7 +55,10 @@ impl Connection {
             ));
         }
         Ok(PathBuf::from(self.base_path(base))
-            .join(MGMT_FILE_NAME).to_str().unwrap().to_owned())
+            .join(MGMT_FILE_NAME)
+            .to_str()
+            .unwrap()
+            .to_owned())
     }
 
     pub fn exec_command(&self) -> String {
@@ -68,19 +86,25 @@ impl Connection {
 
         if self.wirefilter {
             let mgmt_p = self.mgmt_path(base).unwrap();
-            vec!(
-                "--vde-plug".to_owned(), format!("{pa}:{pb}"),
-                "--pidfile".to_owned(), pid_p,
-                "--mgmt".to_owned(), mgmt_p,
-                "--daemon".to_owned()
-            )
+            vec![
+                "--vde-plug".to_owned(),
+                format!("{pa}:{pb}"),
+                "--pidfile".to_owned(),
+                pid_p,
+                "--mgmt".to_owned(),
+                mgmt_p,
+                "--daemon".to_owned(),
+            ]
         } else {
-            vec!(
-                pa, pb,
-                "--pidfile".to_owned(), self.pid_path(base),
-                "--descr".to_owned(), self.name.to_owned(),
-                "--daemon".to_owned()
-            )
+            vec![
+                pa,
+                pb,
+                "--pidfile".to_owned(),
+                self.pid_path(base),
+                "--descr".to_owned(),
+                self.name.to_owned(),
+                "--daemon".to_owned(),
+            ]
         }
     }
 

@@ -1,33 +1,32 @@
-pub use switch::Switch;
-pub use namespace::{Namespace, NSInterface};
-pub use connection::Connection;
-use serde::{Serialize, Deserialize};
 use anyhow::{Context, Result};
+pub use connection::Connection;
+pub use namespace::{NSInterface, Namespace};
+use serde::{Deserialize, Serialize};
+pub use switch::Switch;
 
-mod switch;
-mod namespace;
 mod connection;
+mod namespace;
+mod switch;
 
 const PID_FILE_NAME: &str = "pid";
 const MGMT_FILE_NAME: &str = "mgmt";
 const SOCK_FILE_NAME: &str = "sock";
 
-
-/// A vde topology is a struct that contains all the necessary 
+/// A vde topology is a struct that contains all the necessary
 /// information to create a network topology based on VDE
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Topology {
     switches: Vec<Switch>,
     namespaces: Vec<Namespace>,
-    connections: Vec<Connection>
+    connections: Vec<Connection>,
 }
 
 impl Topology {
     pub fn new() -> Topology {
         Topology {
-            switches: Vec::new(), 
-            namespaces: Vec::new(), 
-            connections: Vec::new()
+            switches: Vec::new(),
+            namespaces: Vec::new(),
+            connections: Vec::new(),
         }
     }
 

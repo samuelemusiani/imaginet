@@ -1,5 +1,5 @@
-use std::{fs, process};
 use anyhow::{Context, Result};
+use std::{fs, process};
 
 use clap::Parser;
 
@@ -7,16 +7,18 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None, arg_required_else_help=true)]
 struct Args {
-
     #[arg(short, long, help = "Base directory for all imaginet files")]
     pub base_dir: Option<String>,
 
-    #[arg(short, long, help = "Terminal to open when starting or attaching to a device")]
+    #[arg(
+        short,
+        long,
+        help = "Terminal to open when starting or attaching to a device"
+    )]
     pub terminal: Option<String>,
 
     #[command(subcommand)]
     pub command: Option<Commands>,
-
 }
 
 #[derive(Parser, Debug)]
@@ -24,31 +26,28 @@ enum Commands {
     #[command(about = "Attach to a device in a topology")]
     Attach {
         /// Name of the device to attach to
-        device: String
+        device: String,
     },
 
     #[command(about = "Create a topology")]
     Create {
         /// Path to configuration file
-        config: String
+        config: String,
     },
 
-    #[command(about = "Start a topology")]  
-    Start {
-    },
+    #[command(about = "Start a topology")]
+    Start {},
 
-    #[command(about = "Status of running topology")]  
-    Status {
-    },
+    #[command(about = "Status of running topology")]
+    Status {},
 
     #[command(about = "Stop a topology")]
-    Stop {
-    },
+    Stop {},
 }
 
-mod vde;
 mod config;
 mod executor;
+mod vde;
 
 fn main() -> Result<()> {
     let args = Args::parse();
@@ -76,7 +75,8 @@ fn main() -> Result<()> {
             Commands::Status {} => executor::topology_status(opts)?,
             Commands::Stop {} => executor::topology_stop(opts)?,
             Commands::Attach { device } => executor::attach(opts, device)?,
-        } None => {
+        },
+        None => {
             eprintln!("No command provided");
             process::exit(1);
         }
@@ -86,11 +86,9 @@ fn main() -> Result<()> {
 }
 
 fn create(opts: executor::Options, config: String) -> Result<()> {
-    let file = fs::read_to_string(config)
-        .context("Reading config file")?;
+    let file = fs::read_to_string(config).context("Reading config file")?;
 
-    let c = config::Config::from_string(&file)
-        .context("Parsing config")?;
+    let c = config::Config::from_string(&file).context("Parsing config")?;
 
     let t = config_to_vde_topology(c);
 
@@ -98,7 +96,6 @@ fn create(opts: executor::Options, config: String) -> Result<()> {
 
     Ok(())
 }
-
 
 fn config_to_vde_topology(c: config::Config) -> vde::Topology {
     let mut t = vde::Topology::new();
@@ -138,8 +135,8 @@ fn config_to_vde_topology(c: config::Config) -> vde::Topology {
             let port_a = c.endpoint_a.port;
             let endp_b = vde::calculate_endpoint_type(&t, &c.endpoint_b.name);
             let port_b = c.endpoint_b.port;
-            let conn = vde::Connection::new(
-                c.name.clone(), endp_a, port_a, endp_b, port_b, c.wirefilter);
+            let conn =
+                vde::Connection::new(c.name.clone(), endp_a, port_a, endp_b, port_b, c.wirefilter);
             t.add_connection(conn);
         }
     }
