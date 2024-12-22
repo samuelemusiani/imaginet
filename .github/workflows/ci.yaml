@@ -1,0 +1,25 @@
+name: Ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install cargo
+      run: sudo apt install cargo rustfmt
+
+    - name: Format
+      run: cargo fmt --all --check
+
+    - name: Build
+      run: cargo build --release
+
+    - name: Test
+      run: cargo test
