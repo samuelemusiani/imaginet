@@ -50,7 +50,7 @@ fn main() -> Result<()> {
     // Options for the executor
     let opts = executor::Options {
         // Terminal to open when starting or attaching to a device
-        terminal: "foot".to_owned(),
+        terminal: get_terminal(),
         // Working directory for all the imaginet files
         working_dir: "/tmp/imnet".to_owned(),
     };
@@ -131,4 +131,12 @@ fn config_to_vde_topology(c: config::Config) -> vde::Topology {
     }
 
     return t;
+}
+
+fn get_terminal() -> String {
+    let term = std::env::var("TERM");
+    match term {
+        Ok(t) => t,
+        Err(_) => "foot".to_owned(),
+    }
 }
