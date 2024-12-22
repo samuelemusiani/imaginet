@@ -8,6 +8,12 @@ use clap::Parser;
 #[command(version, about, long_about = None, arg_required_else_help=true)]
 struct Args {
 
+    #[arg(short, long, help = "Base directory for all imaginet files")]
+    pub base_dir: Option<String>,
+
+    #[arg(short, long, help = "Terminal to open when starting or attaching to a device")]
+    pub terminal: Option<String>,
+
     #[command(subcommand)]
     pub command: Option<Commands>,
 
@@ -50,9 +56,17 @@ fn main() -> Result<()> {
     // Options for the executor
     let opts = executor::Options {
         // Terminal to open when starting or attaching to a device
-        terminal: get_terminal(),
+        terminal: if let Some(term) = args.terminal {
+            term
+        } else {
+            get_terminal()
+        },
         // Working directory for all the imaginet files
-        working_dir: "/tmp/imnet".to_owned(),
+        working_dir: if let Some(dir) = args.base_dir {
+            dir
+        } else {
+            "/tmp/imnet".to_owned()
+        },
     };
 
     match args.command {
