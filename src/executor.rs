@@ -140,7 +140,10 @@ fn init_dir(path: String) -> Result<()> {
 }
 
 fn exec(cmd: &str, args: Vec<String>) -> Result<()> {
-    process::Command::new(cmd).args(args).spawn()?;
+    process::Command::new(cmd)
+        .args(&args)
+        .spawn()
+        .context(format!("Executing commad '{cmd}'\nargs: {args:#?}"))?;
     Ok(())
 }
 
