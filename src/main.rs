@@ -3,6 +3,10 @@ use std::{fs, process};
 
 use clap::Parser;
 
+mod config;
+mod executor;
+mod vde;
+
 /// Create and manage VDE topologies
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None, arg_required_else_help=true)]
@@ -16,6 +20,9 @@ struct Args {
         help = "Terminal to open when starting or attaching to a device"
     )]
     pub terminal: Option<String>,
+
+    #[arg(short, long, help = "Path to configuration file")]
+    pub conifg: Option<String>,
 
     #[command(subcommand)]
     pub command: Option<Commands>,
@@ -48,21 +55,61 @@ enum Commands {
     Stop {},
 }
 
-mod config;
-mod executor;
-mod vde;
+#[derive(serde::Deserialize)]
+struct Terminal {
+    path: String,
+    args: Vec<String>,
+}
+
+/// This is the config struct for imaginet. Not to be confused with the
+/// config module and his config struct (config::Config)
+#[derive(serde::Deserialize)]
+struct Config {
+    terminal: Option<Terminal>,
+}
+
+impl Config {
+    fn new() -> Self {
+        Config { terminal: None }
+    }
+
+    fn from_string(file: &str) -> Result<Config> {
+        let c = serde_yaml::from_str::<Self>(&file).context("Deserialize config file failed")?;
+        Ok(c)
+    }
+}
 
 fn main() -> Result<()> {
     let args = Args::parse();
 
+    let mut conf = Config::new();
+    if let Some(config) = args.conifg {
+        conf = parse_config_file(&config).context("Getting config")?;
+    }
+
     // Options for the executor
     let opts = executor::Options {
-        // Terminal to open when starting or attaching to a device
+        // Terminal to open when starting or attaching to a device. The cli argument
+        // has precedence over the config file, which has precedence over the TERM env
+        // variable
         terminal: if let Some(term) = args.terminal {
             term
+        } else if let Some(term) = &conf.terminal {
+            term.path.clone()
         } else {
-            get_terminal()
+            std::env::var("TERM")
+                .context("Could not find a terminal emulator in TERM environment variable: {e}")?
         },
+
+        // Some terminals require additional arguments in order to execute a program
+        // different from the default shell. For example, the gnome-terminal requires
+        // the `--` argument to separate the terminal arguments from the actual program
+        terminal_args: if let Some(term) = conf.terminal {
+            term.args
+        } else {
+            vec![]
+        },
+
         // Working directory for all the imaginet files
         working_dir: if let Some(dir) = args.base_dir {
             dir
@@ -159,10 +206,8 @@ fn config_to_vde_topology(c: config::Config) -> vde::Topology {
     return t;
 }
 
-fn get_terminal() -> String {
-    let term = std::env::var("TERM");
-    match term {
-        Ok(t) => t,
-        Err(_) => "foot".to_owned(),
-    }
+fn parse_config_file(file: &str) -> Result<Config> {
+    let file = fs::read_to_string(file).context("Reading config file")?;
+    let c = Config::from_string(&file).context("Parsing config")?;
+    Ok(c)
 }

@@ -9,6 +9,7 @@ const NS_STARTER: &str = "./ns_starter.sh";
 #[derive(Clone)]
 pub struct Options {
     pub terminal: String,
+    pub terminal_args: Vec<String>,
     pub working_dir: String,
 }
 
@@ -49,20 +50,19 @@ pub fn topology_start(opts: Options) -> Result<()> {
         let cmd = sw.exec_command();
         let args = sw.exec_args(&opts.working_dir);
 
-        exec(&cmd, args).context(format!("Starting switch {}", sw_name))?;
+        exec(&cmd, &args).context(format!("Starting switch {}", sw_name))?;
     }
 
     for ns in t.get_namespaces() {
         let ns_name = ns.get_name();
 
         let cmd = ns.exec_command();
-        let mut args = ns.exec_args(&opts.working_dir, NS_STARTER);
-
-        args.insert(0, cmd);
+        let args = ns.exec_args(&opts.working_dir, NS_STARTER);
 
         // Namespaces need to be started in a new terminal
 
-        exec(&opts.terminal, args).context(format!("Starting namespace {}", ns_name))?;
+        exec_terminal(&opts.terminal, &opts.terminal_args, &cmd, &args)
+            .context(format!("Starting namespace {}", ns_name))?;
 
         // Need to configure the namespace
         thread::sleep(std::time::Duration::new(1, 0));
@@ -122,7 +122,7 @@ pub fn topology_start(opts: Options) -> Result<()> {
                 .context(format!("Writing config file for {}", conn.name))?;
         }
 
-        exec(&cmd, args).context(format!("Starting connection {}", conn.name))?;
+        exec(&cmd, &args).context(format!("Starting connection {}", conn.name))?;
     }
 
     Ok(())
@@ -147,17 +147,36 @@ fn init_dir(path: String) -> Result<()> {
     Ok(())
 }
 
-fn exec(cmd: &str, args: Vec<String>) -> Result<()> {
+/// Execute a command with args inside a terminal
+fn exec_terminal(
+    terminal: &str,
+    terminal_args: &Vec<String>,
+    cmd: &str,
+    args: &Vec<String>,
+) -> Result<()> {
+    process::Command::new(terminal)
+        .args(terminal_args)
+        .arg(cmd)
+        .args(args)
+        .spawn()
+        .context(format!(
+            "Executing terminal {terminal} with command '{cmd}'\nargs: {args:#?}"
+        ))?;
+    Ok(())
+}
+
+/// Execute a command with args
+fn exec(cmd: &str, args: &Vec<String>) -> Result<()> {
     process::Command::new(cmd)
-        .args(&args)
+        .args(args)
         .spawn()
         .context(format!("Executing commad '{cmd}'\nargs: {args:#?}"))?;
     Ok(())
 }
 
-// This is a point of no return. Replace the current process with cmd. If it fails, it returns an error
-fn exec_inline(cmd: &str, args: Vec<String>) -> Result<()> {
-    let err = process::Command::new(cmd).args(&args).exec();
+/// This is a point of no return. Replace the current process with cmd. If it fails, it returns an error
+fn exec_inline(cmd: &str, args: &Vec<String>) -> Result<()> {
+    let err = process::Command::new(cmd).args(args).exec();
 
     // If we reach this point, the exec failed
 
@@ -166,6 +185,7 @@ fn exec_inline(cmd: &str, args: Vec<String>) -> Result<()> {
     ))
 }
 
+/// Execute a command inside a namespace identified by pid
 fn ns_exec(pid: &str, command: &str) -> Result<()> {
     let cmd = "nsenter";
     let mut base_args = vec![
@@ -184,7 +204,9 @@ fn ns_exec(pid: &str, command: &str) -> Result<()> {
 
     base_args.extend(args);
 
-    exec(cmd, base_args).context("Executing command in namespace failed")?;
+    exec(cmd, &base_args).context(format!(
+        "Executing command {cmd} in namespace failed.\n{base_args:#?}"
+    ))?;
     Ok(())
 }
 
@@ -306,13 +328,13 @@ pub fn attach(opts: Options, device: String, inline: bool) -> Result<()> {
                     sw_name
                 ))?;
                 let cmd = sw.attach_command();
-                let mut args = sw.attach_args(&opts.working_dir, pid);
+                let args = sw.attach_args(&opts.working_dir, pid);
 
                 if inline {
-                    exec_inline(&cmd, args).context("Executing attach command")?;
+                    exec_inline(&cmd, &args).context("Executing attach command")?;
                 } else {
-                    args.insert(0, cmd);
-                    exec(&opts.terminal, args).context("Executing attach command")?;
+                    exec_terminal(&opts.terminal, &opts.terminal_args, &cmd, &args)
+                        .context("Executing attach command")?;
                 }
                 return Ok(());
             } else {
@@ -330,13 +352,13 @@ pub fn attach(opts: Options, device: String, inline: bool) -> Result<()> {
                     ns.get_name()
                 ))?;
                 let cmd = ns.attach_command();
-                let mut args = ns.attach_args(&opts.working_dir, pid);
+                let args = ns.attach_args(&opts.working_dir, pid);
 
                 if inline {
-                    exec_inline(&cmd, args).context("Executing attach command")?;
+                    exec_inline(&cmd, &args).context("Executing attach command")?;
                 } else {
-                    args.insert(0, cmd);
-                    exec(&opts.terminal, args).context("Executing attach command")?;
+                    exec_terminal(&opts.terminal, &opts.terminal_args, &cmd, &args)
+                        .context("Executing attach command")?;
                 }
                 return Ok(());
             } else {
@@ -350,13 +372,13 @@ pub fn attach(opts: Options, device: String, inline: bool) -> Result<()> {
             let path = conn.pid_path(&opts.working_dir);
             if pid_path_is_alive(&path)? {
                 let cmd = conn.attach_command()?;
-                let mut args = conn.attach_args(&opts.working_dir)?;
+                let args = conn.attach_args(&opts.working_dir)?;
 
                 if inline {
-                    exec_inline(&cmd, args).context("Executing attach command")?;
+                    exec_inline(&cmd, &args).context("Executing attach command")?;
                 } else {
-                    args.insert(0, cmd);
-                    exec(&opts.terminal, args).context("Executing attach command")?;
+                    exec_terminal(&opts.terminal, &opts.terminal_args, &cmd, &args)
+                        .context("Executing attach command")?;
                 }
                 return Ok(());
             } else {
