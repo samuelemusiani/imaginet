@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
-use std::{fs, process};
-
 use clap::Parser;
+use home;
+use std::{fs, process};
 
 mod config;
 mod executor;
@@ -82,10 +82,18 @@ impl Config {
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    let mut conf = Config::new();
-    if let Some(config) = args.conifg {
-        conf = parse_config_file(&config).context("Getting config")?;
+    let conf = if let Some(config) = args.conifg {
+        parse_config_file(&config)
+    } else {
+        let home = home::home_dir().context("Getting home directory")?;
+        let config_file = home.join(".config").join("imaginet").join("config.yaml");
+        if config_file.exists() {
+            parse_config_file(config_file.to_str().unwrap())
+        } else {
+            Ok(Config::new())
+        }
     }
+    .context("Getting config")?;
 
     // Options for the executor
     let opts = executor::Options {

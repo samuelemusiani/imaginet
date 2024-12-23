@@ -9,3 +9,4 @@ clap = { version = "4.5.20", features = ["derive"] }
 serde = { version = "1.0.214", features = ["derive"] }
 serde_yaml = "0.9.34"
 colored = "2"
+home = "0.5.11"
