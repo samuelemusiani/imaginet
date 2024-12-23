@@ -114,6 +114,13 @@ pub fn topology_start(opts: Options) -> Result<()> {
         let cmd = conn.exec_command();
         let args = conn.exec_args(&opts.working_dir);
 
+        if conn.needs_config() {
+            let config = conn.get_config();
+            let path = conn.config_path(&opts.working_dir);
+            fs::write(&path, config.join("\n"))
+                .context(format!("Writing config file for {}", conn.name))?;
+        }
+
         exec(&cmd, args).context(format!("Starting connection {}", conn.name))?;
     }
 

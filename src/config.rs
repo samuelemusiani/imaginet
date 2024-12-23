@@ -39,6 +39,7 @@ pub struct Connection {
     pub endpoint_a: Endpoint,
     pub endpoint_b: Endpoint,
     pub wirefilter: Option<bool>,
+    pub config: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -89,6 +90,9 @@ impl Config {
                 if !set.insert(&c.name) {
                     anyhow::bail!("Connection name {} is not unique", c.name);
                 }
+
+                c.checks()
+                    .context(format!("Checks failed for connection {}", c.name))?;
             }
         }
 
@@ -194,6 +198,10 @@ impl Switch {
             }
         }
 
+        if let Some(c) = &self.config {
+            let _ = std::fs::read_to_string(c).context(format!("Reading config file {}", c))?;
+        }
+
         Ok(())
     }
 }
@@ -233,6 +241,20 @@ impl NSInterface {
                 }
             }
         };
+
+        Ok(())
+    }
+}
+
+impl Connection {
+    fn checks(&self) -> Result<()> {
+        if let Some(c) = &self.config {
+            if !self.wirefilter.unwrap_or(false) {
+                anyhow::bail!("Connection has a config file but it's not a wirefilter cable",);
+            }
+
+            let _ = std::fs::read_to_string(c).context(format!("Reading config file {}", c))?;
+        }
 
         Ok(())
     }

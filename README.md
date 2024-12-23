@@ -50,8 +50,6 @@ imaginet clear -> Pulire la topologia corrente. (Fa anche stop).
 
 Il comando stop dovrebbe chiudere dolcemente tutto senza killare il pid :)
 
-Wirefilter configurato con un file.
-
 Stop non controlla se la roba si ferma realmente.
 
 Aggiungere quello che manda: router, vdeplug vari ed eventuali

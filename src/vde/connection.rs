@@ -11,6 +11,7 @@ pub struct Connection {
     pub b: String,
     pub port_b: Option<u32>,
     pub wirefilter: bool,
+    pub config: Vec<String>,
 }
 
 impl Connection {
@@ -29,7 +30,20 @@ impl Connection {
             b,
             port_b,
             wirefilter: wirefilter.unwrap_or(false),
+            config: Vec::new(),
         }
+    }
+
+    pub fn add_config(&mut self, config: String) {
+        self.config.push(config);
+    }
+
+    pub fn get_config(&self) -> &Vec<String> {
+        &self.config
+    }
+
+    pub fn needs_config(&self) -> bool {
+        !self.config.is_empty()
     }
 
     pub fn base_path(&self, base: &str) -> String {
@@ -61,6 +75,14 @@ impl Connection {
             .to_owned())
     }
 
+    pub fn config_path(&self, base: &str) -> String {
+        PathBuf::from(self.base_path(base))
+            .join("config")
+            .to_str()
+            .unwrap()
+            .to_owned()
+    }
+
     pub fn exec_command(&self) -> String {
         if self.wirefilter {
             String::from("wirefilter")
@@ -86,6 +108,8 @@ impl Connection {
 
         if self.wirefilter {
             let mgmt_p = self.mgmt_path(base).unwrap();
+            let conf_p = self.config_path(base);
+
             vec![
                 "--vde-plug".to_owned(),
                 format!("{pa}:{pb}"),
@@ -93,6 +117,8 @@ impl Connection {
                 pid_p,
                 "--mgmt".to_owned(),
                 mgmt_p,
+                "--rcfile".to_owned(),
+                conf_p,
                 "--daemon".to_owned(),
             ]
         } else {

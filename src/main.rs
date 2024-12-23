@@ -141,8 +141,14 @@ fn config_to_vde_topology(c: config::Config) -> vde::Topology {
             let port_a = c.endpoint_a.port;
             let endp_b = vde::calculate_endpoint_type(&t, &c.endpoint_b.name);
             let port_b = c.endpoint_b.port;
-            let conn =
+            let mut conn =
                 vde::Connection::new(c.name.clone(), endp_a, port_a, endp_b, port_b, c.wirefilter);
+
+            if let Some(config) = &c.config {
+                let conf = fs::read_to_string(config).expect("Config file not found");
+                conf.lines().for_each(|l| conn.add_config(l.to_owned()));
+            }
+
             t.add_connection(conn);
         }
     }
