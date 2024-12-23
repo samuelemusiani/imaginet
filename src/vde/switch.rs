@@ -12,6 +12,7 @@ pub struct Switch {
     name: String,
     config: Vec<String>,
     ports: u32,
+    hub: bool,
 }
 
 impl Switch {
@@ -20,6 +21,7 @@ impl Switch {
             name,
             config: Vec::new(),
             ports: DEFAULT_PORTS,
+            hub: false,
         }
     }
 
@@ -33,6 +35,10 @@ impl Switch {
 
     pub fn set_ports(&mut self, ports: u32) {
         self.ports = ports;
+    }
+
+    pub fn set_hub(&mut self, hub: bool) {
+        self.hub = hub;
     }
 
     pub fn get_config(&self) -> &Vec<String> {
@@ -98,7 +104,7 @@ impl Switch {
         let sock_p = self.sock_path(base);
         let conf_p = self.config_path(base);
 
-        vec![
+        let mut v = vec![
             "--pidfile".to_owned(),
             pid_p,
             "--mgmt".to_owned(),
@@ -110,7 +116,13 @@ impl Switch {
             "--numports".to_owned(),
             self.ports.to_string(),
             "--daemon".to_owned(),
-        ]
+        ];
+
+        if self.hub {
+            v.push("--hub".to_owned());
+        }
+
+        return v;
     }
 
     pub fn attach_command(&self) -> String {

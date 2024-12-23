@@ -3,8 +3,9 @@ switch:
     # config: ./sw1.conf
     # Default to 32 ports
     #ports: 2
+    hub: true
 
-  - name: sw2
+  # - name: sw2
 
 namespace:
   - name: ns1
@@ -23,8 +24,15 @@ namespace:
     interfaces:
       - name: eth0
         endpoint: 
-          name: sw2
+          name: sw1
         ip: 10.0.0.2/24
+
+  - name: ns3
+    interfaces:
+      - name: eth0
+        endpoint: 
+          name: sw1
+        ip: 10.1.0.2/24
 
   # - name: ns3
   #   interfaces:
@@ -48,12 +56,12 @@ namespace:
   #       ip: 10.1.0.2/24
 
 #
-connections:
-  - name: conn1
-    endpoint_a:
-      name: sw1
-      port: 4
-    endpoint_b:
-      name: sw2
-      port: 5
-    wirefilter: true
+# connections:
+#   - name: conn1
+#     endpoint_a:
+#       name: sw1
+#       port: 4
+#     endpoint_b:
+#       name: sw2
+#       port: 5
+#     wirefilter: true

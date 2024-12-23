@@ -115,6 +115,10 @@ fn config_to_vde_topology(c: config::Config) -> vde::Topology {
                 s.set_ports(ports);
             }
 
+            if let Some(hub) = sw.hub {
+                s.set_hub(hub);
+            }
+
             t.add_switch(s);
         }
     }

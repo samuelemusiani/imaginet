@@ -16,6 +16,7 @@ pub struct Switch {
     pub name: String,
     pub config: Option<String>,
     pub ports: Option<u32>,
+    pub hub: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

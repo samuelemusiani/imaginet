@@ -62,8 +62,6 @@ Iniline execution per attach (fare in modo che il comando non apra un nuovo term
 
 vdens in background? In modo da poter eseguire anche su macchine remote.
 
-Aggiungere la possibilità di avere switch hub (non devono aprire il manegement?)
-
 Fare in modo che tutto possa essere configurabile da file: inline dei comandi
 di configurazione sia per switch che ns, ecc. Per vdens si può fare post-up, pre-up ad interfaccia
 
