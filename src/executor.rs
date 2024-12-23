@@ -159,7 +159,7 @@ pub fn write_topology(t: crate::vde::Topology) -> Result<()> {
 pub fn topology_status() -> Result<()> {
     let t = get_topology()?;
 
-    println!("{}", "--- Topology status ---".bold().blink());
+    println!("{}", "--- Topology status ---".bold());
     println!("{}:", "Namespaces".bold());
     for n in t.get_namespaces() {
         let path = n.pid_path(WORKING_DIR);
