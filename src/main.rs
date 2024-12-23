@@ -25,6 +25,9 @@ struct Args {
 enum Commands {
     #[command(about = "Attach to a device in a topology")]
     Attach {
+        #[arg(short, long, help = "Attach inline: do not open a new terminal")]
+        inline: bool,
+
         /// Name of the device to attach to
         device: String,
     },
@@ -74,7 +77,7 @@ fn main() -> Result<()> {
             Commands::Start {} => executor::topology_start(opts)?,
             Commands::Status {} => executor::topology_status(opts)?,
             Commands::Stop {} => executor::topology_stop(opts)?,
-            Commands::Attach { device } => executor::attach(opts, device)?,
+            Commands::Attach { device, inline } => executor::attach(opts, device, inline)?,
         },
         None => {
             eprintln!("No command provided");

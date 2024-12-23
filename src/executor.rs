@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Context, Result};
 use colored::Colorize;
+use std::os::unix::process::CommandExt; // Used for exec()
 use std::{fs, process, thread};
 //use core::time;
 
@@ -154,6 +155,17 @@ fn exec(cmd: &str, args: Vec<String>) -> Result<()> {
     Ok(())
 }
 
+// This is a point of no return. Replace the current process with cmd. If it fails, it returns an error
+fn exec_inline(cmd: &str, args: Vec<String>) -> Result<()> {
+    let err = process::Command::new(cmd).args(&args).exec();
+
+    // If we reach this point, the exec failed
+
+    Err(anyhow!(
+        "Executing command '{cmd}'\nargs: {args:#?}\nError: {err}"
+    ))
+}
+
 fn ns_exec(pid: &str, command: &str) -> Result<()> {
     let cmd = "nsenter";
     let mut base_args = vec![
@@ -280,7 +292,7 @@ pub fn topology_stop(opts: Options) -> Result<()> {
     Ok(())
 }
 
-pub fn attach(opts: Options, device: String) -> Result<()> {
+pub fn attach(opts: Options, device: String, inline: bool) -> Result<()> {
     let t = get_topology(&opts).context("Gettin topology")?;
     const DEAD_ERR: &str = "Device not alive";
 
@@ -296,9 +308,12 @@ pub fn attach(opts: Options, device: String) -> Result<()> {
                 let cmd = sw.attach_command();
                 let mut args = sw.attach_args(&opts.working_dir, pid);
 
-                args.insert(0, cmd);
-
-                exec(&opts.terminal, args).context("Executing attach command")?;
+                if inline {
+                    exec_inline(&cmd, args).context("Executing attach command")?;
+                } else {
+                    args.insert(0, cmd);
+                    exec(&opts.terminal, args).context("Executing attach command")?;
+                }
                 return Ok(());
             } else {
                 return Err(anyhow!(DEAD_ERR));
@@ -316,9 +331,13 @@ pub fn attach(opts: Options, device: String) -> Result<()> {
                 ))?;
                 let cmd = ns.attach_command();
                 let mut args = ns.attach_args(&opts.working_dir, pid);
-                args.insert(0, cmd);
 
-                exec(&opts.terminal, args).context("Executing attach command")?;
+                if inline {
+                    exec_inline(&cmd, args).context("Executing attach command")?;
+                } else {
+                    args.insert(0, cmd);
+                    exec(&opts.terminal, args).context("Executing attach command")?;
+                }
                 return Ok(());
             } else {
                 return Err(anyhow!(DEAD_ERR));
@@ -333,9 +352,12 @@ pub fn attach(opts: Options, device: String) -> Result<()> {
                 let cmd = conn.attach_command()?;
                 let mut args = conn.attach_args(&opts.working_dir)?;
 
-                args.insert(0, cmd);
-
-                exec(&opts.terminal, args).context("Executing attach command")?;
+                if inline {
+                    exec_inline(&cmd, args).context("Executing attach command")?;
+                } else {
+                    args.insert(0, cmd);
+                    exec(&opts.terminal, args).context("Executing attach command")?;
+                }
                 return Ok(());
             } else {
                 return Err(anyhow!(DEAD_ERR));

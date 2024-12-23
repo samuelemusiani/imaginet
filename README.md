@@ -56,8 +56,6 @@ Aggiungere quello che manda: router, vdeplug vari ed eventuali
 
 Aggiungere la modalità verbosa (-v -vv -vvv) per debuggare.
 
-Iniline execution per attach (fare in modo che il comando non apra un nuovo terminale)
-
 vdens in background? In modo da poter eseguire anche su macchine remote.
 
 Fare in modo che tutto possa essere configurabile da file: inline dei comandi
