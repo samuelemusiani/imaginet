@@ -1,5 +1,5 @@
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Namespace {
@@ -39,7 +39,11 @@ impl Namespace {
 
     pub fn pid_path(&self, base: &str) -> String {
         // Path is written by the ns_starter.sh script
-        PathBuf::from(base).join(&format!("{}.pid", &self.name)).to_str().unwrap().to_owned()
+        PathBuf::from(base)
+            .join(&format!("{}.pid", &self.name))
+            .to_str()
+            .unwrap()
+            .to_owned()
     }
 
     pub fn exec_command(&self) -> String {
@@ -50,14 +54,11 @@ impl Namespace {
     /// starter: the name of the starter script that will perform pid writing
     pub fn exec_args(&self, base: &str, starter: &str) -> Vec<String> {
         if self.interfaces.len() == 0 {
-            return vec!();
-        } 
+            return vec![];
+        }
 
         let name = self.get_name().to_owned();
-        let mut args = vec!(
-            "--hostname".to_owned(), name.clone(),
-            "--multi".to_owned()
-        );
+        let mut args = vec!["--hostname".to_owned(), name.clone(), "--multi".to_owned()];
 
         let b = PathBuf::from(base);
         for i in &self.interfaces {
@@ -69,10 +70,7 @@ impl Namespace {
             }
         }
 
-        let mut args2 = vec!(
-            "--".to_owned(), 
-            starter.to_owned(), base.to_owned(), name
-        );
+        let mut args2 = vec!["--".to_owned(), starter.to_owned(), base.to_owned(), name];
         args.append(&mut args2);
         return args;
     }
@@ -82,19 +80,19 @@ impl Namespace {
     }
 
     pub fn attach_args(&self, _base: &str, pid: u32) -> Vec<String> {
-        vec!(
-            "-t".to_owned(), pid.to_string(),
+        vec![
+            "-t".to_owned(),
+            pid.to_string(),
             "--preserve-credentials".to_owned(),
             "-U".to_owned(),
             "-n".to_owned(),
             "--keep-caps".to_owned(),
-        )
+        ]
     }
 }
 
 impl NSInterface {
-    pub fn new(name: String, ip: String, endpoint: String, 
-        port: Option<u32>) -> NSInterface {
+    pub fn new(name: String, ip: String, endpoint: String, port: Option<u32>) -> NSInterface {
         NSInterface {
             name,
             ip,

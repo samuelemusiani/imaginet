@@ -1,6 +1,6 @@
-use serde::{Serialize, Deserialize};
 use anyhow::{Context, Result};
-use std::collections::{HashSet, HashMap};
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
 use std::net;
 
 const DEFAULT_SWITCH_PORTS: u32 = 32;
@@ -22,7 +22,7 @@ pub struct Switch {
 pub struct Namespace {
     pub name: String,
     pub interfaces: Vec<NSInterface>,
-    commands: Option<Vec<String>>
+    commands: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -44,20 +44,19 @@ pub struct Connection {
 pub struct Config {
     pub switch: Option<Vec<Switch>>,
     pub namespace: Option<Vec<Namespace>>,
-    pub connections: Option<Vec<Connection>>
+    pub connections: Option<Vec<Connection>>,
 }
 
 impl Config {
     pub fn from_string(file: &str) -> Result<Config> {
-        let c = serde_yaml::from_str::<Self>(&file)
-            .context("Deserialize config file failed")?;
+        let c = serde_yaml::from_str::<Self>(&file).context("Deserialize config file failed")?;
 
         c.checks().context("Config checks failed")?;
 
         Ok(c)
     }
 
-    fn checks(&self) -> Result<()>{
+    fn checks(&self) -> Result<()> {
         // All names must be unique
 
         let mut set = HashSet::new();
@@ -68,7 +67,8 @@ impl Config {
                     anyhow::bail!("Namespace name {} is not unique", n.name);
                 }
 
-                n.checks().context(format!("Checks failed for namespace {}", n.name))?;
+                n.checks()
+                    .context(format!("Checks failed for namespace {}", n.name))?;
             }
         }
 
@@ -78,7 +78,8 @@ impl Config {
                     anyhow::bail!("Switch name {} is not unique", s.name);
                 }
 
-                s.checks().context(format!("Checks failed for switch {}", s.name))?;
+                s.checks()
+                    .context(format!("Checks failed for switch {}", s.name))?;
             }
         }
 
@@ -105,7 +106,13 @@ impl Config {
                     Some(p) => p,
                     None => DEFAULT_SWITCH_PORTS,
                 };
-                endpoint_map.insert(&s.name, Endpoint { name: s.name.clone(), port: Some(ports) });
+                endpoint_map.insert(
+                    &s.name,
+                    Endpoint {
+                        name: s.name.clone(),
+                        port: Some(ports),
+                    },
+                );
             }
         }
 
@@ -113,7 +120,8 @@ impl Config {
         // This simply checks if the endpoint exists and if the port is valid.
         // based on the map we created before.
         let endpoint_check = |name: String, port: Option<u32>| -> Result<()> {
-            let end = endpoint_map.get(&name)
+            let end = endpoint_map
+                .get(&name)
                 .ok_or_else(|| anyhow::anyhow!("Endpoint {name} does not exist"))?;
 
             if let Some(p) = port {
@@ -123,7 +131,9 @@ impl Config {
                     if p == end_ports {
                         s.push_str("\nPorts are zero-indexed, so you should decrement the port number by one :)");
                     }
-                    anyhow::bail!("Port {p} is out of range for endpoint {name} (max {end_ports} ports){s}");
+                    anyhow::bail!(
+                        "Port {p} is out of range for endpoint {name} (max {end_ports} ports){s}"
+                    );
                 };
             };
 
@@ -135,8 +145,10 @@ impl Config {
         if let Some(ns) = &self.namespace {
             for n in ns {
                 for i in &n.interfaces {
-                    endpoint_check(i.endpoint.name.clone(), i.endpoint.port)
-                        .context(format!("Checks failed for interface {} on namespace {}", i.name, n.name))?;
+                    endpoint_check(i.endpoint.name.clone(), i.endpoint.port).context(format!(
+                        "Checks failed for interface {} on namespace {}",
+                        i.name, n.name
+                    ))?;
 
                     // This increments a counter for each endpoint used
                     *used_map.entry(&i.endpoint.name).or_default() += 1;
@@ -146,16 +158,19 @@ impl Config {
 
         if let Some(con) = &self.connections {
             for c in con {
-                endpoint_check(c.endpoint_a.name.clone(), c.endpoint_a.port)
-                    .context(format!("Checks failed for connection {} endpoint A", c.name))?;
-                endpoint_check(c.endpoint_b.name.clone(), c.endpoint_b.port)
-                    .context(format!("Checks failed for connection {} endpoint B", c.name))?;
+                endpoint_check(c.endpoint_a.name.clone(), c.endpoint_a.port).context(format!(
+                    "Checks failed for connection {} endpoint A",
+                    c.name
+                ))?;
+                endpoint_check(c.endpoint_b.name.clone(), c.endpoint_b.port).context(format!(
+                    "Checks failed for connection {} endpoint B",
+                    c.name
+                ))?;
 
                 *used_map.entry(&c.endpoint_a.name).or_default() += 1;
                 *used_map.entry(&c.endpoint_b.name).or_default() += 1;
             }
         }
-
 
         // Check if endpoint have finished all the ports
         for (name, ports) in endpoint_map {
@@ -184,9 +199,9 @@ impl Switch {
 
 impl Namespace {
     fn checks(&self) -> Result<()> {
-
         for i in &self.interfaces {
-            i.checks().context(format!("Checks failed for interface {}", i.name))?;
+            i.checks()
+                .context(format!("Checks failed for interface {}", i.name))?;
         }
 
         Ok(())
@@ -197,10 +212,11 @@ impl NSInterface {
     fn checks(&self) -> Result<()> {
         // Check if IP is valid in CIDR notation
         let (ip, mask) = match self.ip.find('/') {
-            Some(p) => (&self.ip[..p], &self.ip[p+1..]),
+            Some(p) => (&self.ip[..p], &self.ip[p + 1..]),
             None => anyhow::bail!("Invalid CIDR format, missing /"),
         };
-        let res = ip.parse::<net::IpAddr>()
+        let res = ip
+            .parse::<net::IpAddr>()
             .context(format!("IP address: {}", self.ip))?;
 
         let m = mask.parse::<u8>().context("Invalid mask, not a number")?;
@@ -209,7 +225,7 @@ impl NSInterface {
                 if m > 32 {
                     anyhow::bail!("Invalid mask, too large for IPv4 (> 32)");
                 }
-            },
+            }
             net::IpAddr::V6(_) => {
                 if m > 128 {
                     anyhow::bail!("Invalid mask, too large for IPv6 (> 128)");

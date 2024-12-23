@@ -1,6 +1,6 @@
-use std::path::PathBuf;
 use super::{MGMT_FILE_NAME, PID_FILE_NAME, SOCK_FILE_NAME};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 const DEFAULT_PORTS: u32 = 32;
 
@@ -16,7 +16,11 @@ pub struct Switch {
 
 impl Switch {
     pub fn new(name: String) -> Switch {
-        Switch { name, config: Vec::new(), ports: DEFAULT_PORTS }
+        Switch {
+            name,
+            config: Vec::new(),
+            ports: DEFAULT_PORTS,
+        }
     }
 
     pub fn get_name(&self) -> &str {
@@ -42,26 +46,46 @@ impl Switch {
     /// Get base path of all the files related to the switch given
     /// the global base path
     pub fn base_path(&self, base: &str) -> String {
-        PathBuf::from(base).join(&self.name).to_str().unwrap().to_owned()
+        PathBuf::from(base)
+            .join(&self.name)
+            .to_str()
+            .unwrap()
+            .to_owned()
     }
 
     /// Get the path of the pid file of the switch given the global base path
     pub fn pid_path(&self, base: &str) -> String {
-        PathBuf::from(self.base_path(base)).join(PID_FILE_NAME).to_str().unwrap().to_owned()
+        PathBuf::from(self.base_path(base))
+            .join(PID_FILE_NAME)
+            .to_str()
+            .unwrap()
+            .to_owned()
     }
 
     /// Get the path of the management file of the switch given the global base path
     pub fn mgmt_path(&self, base: &str) -> String {
-        PathBuf::from(self.base_path(base)).join(MGMT_FILE_NAME).to_str().unwrap().to_owned()
+        PathBuf::from(self.base_path(base))
+            .join(MGMT_FILE_NAME)
+            .to_str()
+            .unwrap()
+            .to_owned()
     }
 
     /// Get the path of the socket file of the switch given the global base path
     pub fn sock_path(&self, base: &str) -> String {
-        PathBuf::from(self.base_path(base)).join(SOCK_FILE_NAME).to_str().unwrap().to_owned()
+        PathBuf::from(self.base_path(base))
+            .join(SOCK_FILE_NAME)
+            .to_str()
+            .unwrap()
+            .to_owned()
     }
 
     pub fn config_path(&self, base: &str) -> String {
-        PathBuf::from(self.base_path(base)).join("config").to_str().unwrap().to_owned()
+        PathBuf::from(self.base_path(base))
+            .join("config")
+            .to_str()
+            .unwrap()
+            .to_owned()
     }
 
     pub fn exec_command(&self) -> String {
@@ -74,12 +98,19 @@ impl Switch {
         let sock_p = self.sock_path(base);
         let conf_p = self.config_path(base);
 
-        vec!["--pidfile".to_owned(), pid_p, 
-            "--mgmt".to_owned(), mgmt_p, 
-            "--sock".to_owned(), sock_p,
-            "--rcfile".to_owned(), conf_p,
-            "--numports".to_owned(), self.ports.to_string(),
-            "--daemon".to_owned()]
+        vec![
+            "--pidfile".to_owned(),
+            pid_p,
+            "--mgmt".to_owned(),
+            mgmt_p,
+            "--sock".to_owned(),
+            sock_p,
+            "--rcfile".to_owned(),
+            conf_p,
+            "--numports".to_owned(),
+            self.ports.to_string(),
+            "--daemon".to_owned(),
+        ]
     }
 
     pub fn attach_command(&self) -> String {
