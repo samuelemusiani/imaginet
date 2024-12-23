@@ -269,13 +269,15 @@ mod tests {
         let file = r#"
 switch:
     - name: "test"
-      config: "test.conf"
+      hub: true
 "#;
         let c = Config::from_string(file).unwrap();
         let sws = c.switch.unwrap();
         assert_eq!(sws.len(), 1);
         let sw = &sws[0];
         assert_eq!(sw.name, "test");
-        assert_eq!(sw.config, Some("test.conf".to_owned()));
+        assert_eq!(sw.config, None);
+        assert_eq!(sw.ports, None);
+        assert_eq!(sw.hub, Some(true));
     }
 }
