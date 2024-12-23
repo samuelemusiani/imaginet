@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Context, Result};
-use std::{fs, process, thread};
 use colored::Colorize;
+use std::{fs, process, thread};
 //use core::time;
 
 const NS_STARTER: &str = "./ns_starter.sh";
