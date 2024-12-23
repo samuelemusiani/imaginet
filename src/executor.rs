@@ -1,9 +1,11 @@
 use anyhow::{anyhow, Context, Result};
+use colored::Colorize;
 use std::{fs, process, thread};
 //use core::time;
 
 const NS_STARTER: &str = "./ns_starter.sh";
 
+#[derive(Clone)]
 pub struct Options {
     pub terminal: String,
     pub working_dir: String,
@@ -166,11 +168,12 @@ fn ns_exec(pid: &str, command: &str) -> Result<()> {
 
 pub fn write_topology(opts: Options, t: crate::vde::Topology) -> Result<()> {
     init(&opts).context("Initializing executor")?;
-
     let t = t.to_string().context("Converting topology to string")?;
 
     let path = &format!("{}/topology", &opts.working_dir);
     fs::write(&path, t).context(format!("Writing topology on file {path}"))?;
+
+    println!("{}", "--- Topology created ---\n".bold());
 
     Ok(())
 }
@@ -178,36 +181,36 @@ pub fn write_topology(opts: Options, t: crate::vde::Topology) -> Result<()> {
 pub fn topology_status(opts: Options) -> Result<()> {
     let t = get_topology(&opts).context("Gettin topology")?;
 
-    println!("--- Topology status ---");
-    println!("Namespaces:");
+    println!("{}", "--- Topology status ---".bold());
+    println!("{}:", "Namespaces".bold());
     for n in t.get_namespaces() {
         let path = n.pid_path(&opts.working_dir);
         if pid_path_is_alive(&path)? {
-            println!("{} alive", n.get_name());
+            println!("- {} {}", n.get_name(), "alive".green());
         } else {
-            println!("{} dead", n.get_name());
+            println!("- {} {}", n.get_name(), "dead".red());
         }
     }
 
-    println!("\nSwitches:");
+    println!("\n{}:", "Switches".bold());
 
     for s in t.get_switches() {
         let path = s.pid_path(&opts.working_dir);
         if pid_path_is_alive(&path)? {
-            println!("{} alive", s.get_name());
+            println!("- {} {}", s.get_name(), "alive".green());
         } else {
-            println!("{} dead", s.get_name());
+            println!("- {} {}", s.get_name(), "dead".red());
         }
     }
 
-    println!("\nConnections:");
+    println!("\n{}:", "Connections".bold());
 
     for conn in t.get_connections() {
         let path = conn.pid_path(&opts.working_dir);
         if pid_path_is_alive(&path)? {
-            println!("{} alive", conn.name);
+            println!("- {} {}", conn.name, "alive".green());
         } else {
-            println!("{} dead", conn.name);
+            println!("- {} {}", conn.name, "dead".red());
         }
     }
 

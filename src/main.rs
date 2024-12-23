@@ -92,7 +92,9 @@ fn create(opts: executor::Options, config: String) -> Result<()> {
 
     let t = config_to_vde_topology(c);
 
-    executor::write_topology(opts, t)?;
+    executor::write_topology(opts.clone(), t)?;
+
+    let _ = executor::topology_status(opts);
 
     Ok(())
 }
