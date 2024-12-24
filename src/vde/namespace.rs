@@ -87,6 +87,7 @@ impl Namespace {
             pid.to_string(),
             "--preserve-credentials".to_owned(),
             "-U".to_owned(),
+            "-u".to_owned(),
             "-n".to_owned(),
             "--keep-caps".to_owned(),
         ]
