@@ -55,7 +55,10 @@ enum Commands {
     Status {},
 
     #[command(about = "Stop a topology")]
-    Stop {},
+    Stop {
+        /// List of device names to start
+        devices: Option<Vec<String>>,
+    },
 }
 
 #[derive(serde::Deserialize)]
@@ -134,7 +137,7 @@ fn main() -> Result<()> {
             Commands::Create { config } => create(opts, config)?,
             Commands::Start { devices } => executor::topology_start(opts, devices)?,
             Commands::Status {} => executor::topology_status(opts)?,
-            Commands::Stop {} => executor::topology_stop(opts)?,
+            Commands::Stop { devices } => executor::topology_stop(opts, devices)?,
             Commands::Attach { device, inline } => executor::attach(opts, device, inline)?,
         },
         None => {

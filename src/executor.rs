@@ -33,6 +33,7 @@ pub fn get_topology(opts: &Options) -> Result<crate::vde::Topology> {
     Ok(t)
 }
 
+/// If None is provided as devices, all devices are started
 pub fn topology_start(opts: Options, devices: Option<Vec<String>>) -> Result<()> {
     let t = get_topology(&opts).context("Gettin topology")?;
 
@@ -342,10 +343,17 @@ fn pid_is_alive(pid: &str) -> bool {
         .success()
 }
 
-pub fn topology_stop(opts: Options) -> Result<()> {
+/// If None is provided as devices, all devices are stopped
+pub fn topology_stop(opts: Options, devices: Option<Vec<String>>) -> Result<()> {
     let t = get_topology(&opts).context("Gettin topology")?;
 
     for sw in t.get_switches() {
+        if let Some(devices) = &devices {
+            if !devices.contains(&sw.get_name().to_owned()) {
+                continue;
+            }
+        }
+
         let path = sw.pid_path(&opts.working_dir);
         if pid_path_is_alive(&path)? {
             let pid = fs::read_to_string(&path)?.trim().to_owned();
@@ -355,6 +363,12 @@ pub fn topology_stop(opts: Options) -> Result<()> {
     }
 
     for ns in t.get_namespaces() {
+        if let Some(devices) = &devices {
+            if !devices.contains(&ns.get_name().to_owned()) {
+                continue;
+            }
+        }
+
         let path = ns.pid_path(&opts.working_dir);
         if pid_path_is_alive(&path)? {
             let pid = fs::read_to_string(&path)?.trim().to_owned();
@@ -363,6 +377,12 @@ pub fn topology_stop(opts: Options) -> Result<()> {
     }
 
     for conn in t.get_connections() {
+        if let Some(devices) = &devices {
+            if !devices.contains(&conn.name) {
+                continue;
+            }
+        }
+
         let path = conn.pid_path(&opts.working_dir);
         if pid_path_is_alive(&path)? {
             let pid = fs::read_to_string(&path)?.trim().to_owned();
