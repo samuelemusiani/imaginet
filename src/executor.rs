@@ -3,10 +3,8 @@ use colored::Colorize;
 use std::io::Write;
 use std::os::unix::{fs::PermissionsExt, process::CommandExt}; // Used for exec(), and permissions set on the namespace starter script
 use std::{fs, process, thread};
-//use core::time;
 
-const NS_STARTER: &str = "./ns_starter.sh";
-const DEAD_ERR: &str = "Device not alive";
+const ERR_DEAD_DEVICE: &str = "Device not alive";
 
 #[derive(Clone)]
 pub struct Options {
@@ -51,7 +49,7 @@ pub fn topology_start(opts: Options, devices: Option<Vec<String>>) -> Result<()>
     // For namespaces we need a starter script in order to save
     // some information, such as the pid
     let script = crate::vde::Namespace::get_starter_script();
-    let script_path = std::path::PathBuf::from(&opts.working_dir).join(NS_STARTER);
+    let script_path = std::path::PathBuf::from(&opts.working_dir).join("ns_starter.sh");
     let mut file = fs::File::create(&script_path).context("Creating starter script")?;
     file.write(script)
         .context("Writing starter script into file")?;
@@ -240,7 +238,6 @@ fn exec_inline(cmd: &str, args: &Vec<String>) -> Result<()> {
     let err = process::Command::new(cmd).args(args).exec();
 
     // If we reach this point, the exec failed
-
     Err(anyhow!(
         "Executing command '{cmd}'\nargs: {args:#?}\nError: {err}"
     ))
@@ -419,70 +416,76 @@ pub fn topology_attach(opts: Options, device: String, inline: bool) -> Result<()
     for sw in t.get_switches() {
         let sw_name = sw.get_name();
         if sw_name == &device {
-            let path = sw.pid_path(&opts.working_dir);
-            if pid_path_is_alive(&path)? {
-                let pid = fs::read_to_string(&path)?.trim().parse().context(format!(
-                    "Internal error: can't parse pid for switch: {}",
-                    sw_name
-                ))?;
-                let cmd = sw.attach_command();
-                let args = sw.attach_args(&opts.working_dir, pid);
-
-                if inline {
-                    exec_inline(&cmd, &args).context("Executing attach command")?;
-                } else {
-                    exec_terminal(&opts.terminal, &opts.terminal_args, &cmd, &args)
-                        .context("Executing attach command")?;
-                }
-                return Ok(());
-            } else {
-                return Err(anyhow!(DEAD_ERR));
-            }
+            continue;
         }
+
+        let path = sw.pid_path(&opts.working_dir);
+        if !pid_path_is_alive(&path)? {
+            return Err(anyhow!(ERR_DEAD_DEVICE));
+        }
+
+        let pid = fs::read_to_string(&path)?.trim().parse().context(format!(
+            "Internal error: can't parse pid for switch: {}",
+            sw_name
+        ))?;
+        let cmd = sw.attach_command();
+        let args = sw.attach_args(&opts.working_dir, pid);
+
+        if inline {
+            exec_inline(&cmd, &args).context("Executing attach command")?;
+        } else {
+            exec_terminal(&opts.terminal, &opts.terminal_args, &cmd, &args)
+                .context("Executing attach command")?;
+        }
+        return Ok(());
     }
 
     for ns in t.get_namespaces() {
-        if ns.get_name() == &device {
-            let path = ns.pid_path(&opts.working_dir);
-            if pid_path_is_alive(&path)? {
-                let pid = fs::read_to_string(&path)?.trim().parse().context(format!(
-                    "Internal error: can't parse pid for namespace: {}",
-                    ns.get_name()
-                ))?;
-                let cmd = ns.attach_command();
-                let args = ns.attach_args(&opts.working_dir, pid);
-
-                if inline {
-                    exec_inline(&cmd, &args).context("Executing attach command")?;
-                } else {
-                    exec_terminal(&opts.terminal, &opts.terminal_args, &cmd, &args)
-                        .context("Executing attach command")?;
-                }
-                return Ok(());
-            } else {
-                return Err(anyhow!(DEAD_ERR));
-            }
+        if ns.get_name() != &device {
+            continue;
         }
+
+        let path = ns.pid_path(&opts.working_dir);
+        if !pid_path_is_alive(&path)? {
+            return Err(anyhow!(ERR_DEAD_DEVICE));
+        }
+
+        let pid = fs::read_to_string(&path)?.trim().parse().context(format!(
+            "Internal error: can't parse pid for namespace: {}",
+            ns.get_name()
+        ))?;
+        let cmd = ns.attach_command();
+        let args = ns.attach_args(&opts.working_dir, pid);
+
+        if inline {
+            exec_inline(&cmd, &args).context("Executing attach command")?;
+        } else {
+            exec_terminal(&opts.terminal, &opts.terminal_args, &cmd, &args)
+                .context("Executing attach command")?;
+        }
+        return Ok(());
     }
 
     for conn in t.get_connections() {
-        if conn.name == device {
-            let path = conn.pid_path(&opts.working_dir);
-            if pid_path_is_alive(&path)? {
-                let cmd = conn.attach_command()?;
-                let args = conn.attach_args(&opts.working_dir)?;
-
-                if inline {
-                    exec_inline(&cmd, &args).context("Executing attach command")?;
-                } else {
-                    exec_terminal(&opts.terminal, &opts.terminal_args, &cmd, &args)
-                        .context("Executing attach command")?;
-                }
-                return Ok(());
-            } else {
-                return Err(anyhow!(DEAD_ERR));
-            }
+        if conn.name != device {
+            continue;
         }
+
+        let path = conn.pid_path(&opts.working_dir);
+        if !pid_path_is_alive(&path)? {
+            return Err(anyhow!(ERR_DEAD_DEVICE));
+        }
+
+        let cmd = conn.attach_command()?;
+        let args = conn.attach_args(&opts.working_dir)?;
+
+        if inline {
+            exec_inline(&cmd, &args).context("Executing attach command")?;
+        } else {
+            exec_terminal(&opts.terminal, &opts.terminal_args, &cmd, &args)
+                .context("Executing attach command")?;
+        }
+        return Ok(());
     }
 
     Err(anyhow!("Device not found"))
@@ -502,7 +505,7 @@ pub fn topology_exec(opts: Options, device: String, command: Vec<String>) -> Res
 
         let path = sw.pid_path(&opts.working_dir);
         if !pid_path_is_alive(&path)? {
-            return Err(anyhow!(DEAD_ERR));
+            return Err(anyhow!(ERR_DEAD_DEVICE));
         }
 
         let cmd = sw.exec_command_command();
@@ -519,7 +522,7 @@ pub fn topology_exec(opts: Options, device: String, command: Vec<String>) -> Res
 
         let path = ns.pid_path(&opts.working_dir);
         if !pid_path_is_alive(&path)? {
-            return Err(anyhow!(DEAD_ERR));
+            return Err(anyhow!(ERR_DEAD_DEVICE));
         }
 
         let pid = fs::read_to_string(&path)?.trim().parse().unwrap();
@@ -537,7 +540,7 @@ pub fn topology_exec(opts: Options, device: String, command: Vec<String>) -> Res
 
         let path = conn.pid_path(&opts.working_dir);
         if !pid_path_is_alive(&path)? {
-            return Err(anyhow!(DEAD_ERR));
+            return Err(anyhow!(ERR_DEAD_DEVICE));
         }
 
         let cmd = conn.exec_command_command()?;
@@ -547,5 +550,5 @@ pub fn topology_exec(opts: Options, device: String, command: Vec<String>) -> Res
         return Ok(());
     }
 
-    todo!()
+    Err(anyhow!("Device not found"))
 }
