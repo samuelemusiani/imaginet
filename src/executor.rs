@@ -282,12 +282,19 @@ pub fn write_topology(opts: Options, t: crate::vde::Topology) -> Result<()> {
     Ok(())
 }
 
-pub fn topology_status(opts: Options) -> Result<()> {
+/// If None is provided as devices, all devices are printed in the status
+pub fn topology_status(opts: Options, devices: Option<Vec<String>>) -> Result<()> {
     let t = get_topology(&opts).context("Gettin topology")?;
 
     println!("{}", "--- Topology status ---".bold());
     println!("{}:", "Namespaces".bold());
     for n in t.get_namespaces() {
+        if let Some(devices) = &devices {
+            if !devices.contains(&n.get_name().to_owned()) {
+                continue;
+            }
+        }
+
         let path = n.pid_path(&opts.working_dir);
         if pid_path_is_alive(&path)? {
             println!("- {} {}", n.get_name(), "alive".green());
@@ -299,6 +306,12 @@ pub fn topology_status(opts: Options) -> Result<()> {
     println!("\n{}:", "Switches".bold());
 
     for s in t.get_switches() {
+        if let Some(devices) = &devices {
+            if !devices.contains(&s.get_name().to_owned()) {
+                continue;
+            }
+        }
+
         let path = s.pid_path(&opts.working_dir);
         if pid_path_is_alive(&path)? {
             println!("- {} {}", s.get_name(), "alive".green());
@@ -310,6 +323,12 @@ pub fn topology_status(opts: Options) -> Result<()> {
     println!("\n{}:", "Connections".bold());
 
     for conn in t.get_connections() {
+        if let Some(devices) = &devices {
+            if !devices.contains(&conn.name) {
+                continue;
+            }
+        }
+
         let path = conn.pid_path(&opts.working_dir);
         if pid_path_is_alive(&path)? {
             println!("- {} {}", conn.name, "alive".green());

@@ -44,7 +44,6 @@ imaginet exec -> Eseguire un comanod in uno switch/router con il socket di manag
 imaginet add -> Aggiungere un componente alla rete corrente.
 imaginet rm -> Aggiungere un componente alla rete corrente.
 imaginet dump -> Dump della rete corrente in file di configurazione.
-imaginet stop _ -> Stoppare un determinato componente della rete.
 imaginet clear -> Pulire la topologia corrente. (Fa anche stop).
 
 Il comando stop dovrebbe chiudere dolcemente tutto senza killare il pid :)
@@ -52,6 +51,9 @@ Il comando stop dovrebbe chiudere dolcemente tutto senza killare il pid :)
 Stop non controlla se la roba si ferma realmente.
 
 Aggiungere quello che manca: router, vdeplug vari ed eventuali
+
+Se si fa partire un namespace senza far partire lo switch l'errore non è molto chiaro.
+Andrebbe controllato che la dipendenza sulla connessione sia attiva.
 
 Aggiungere la modalità verbosa (-v -vv -vvv) per debuggare.
 

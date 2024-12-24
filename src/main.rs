@@ -52,11 +52,14 @@ enum Commands {
     },
 
     #[command(about = "Status of running topology")]
-    Status {},
+    Status {
+        /// List of device names to get status
+        devices: Option<Vec<String>>,
+    },
 
     #[command(about = "Stop a topology")]
     Stop {
-        /// List of device names to start
+        /// List of device names to stop
         devices: Option<Vec<String>>,
     },
 }
@@ -136,7 +139,7 @@ fn main() -> Result<()> {
         Some(command) => match command {
             Commands::Create { config } => create(opts, config)?,
             Commands::Start { devices } => executor::topology_start(opts, devices)?,
-            Commands::Status {} => executor::topology_status(opts)?,
+            Commands::Status { devices } => executor::topology_status(opts, devices)?,
             Commands::Stop { devices } => executor::topology_stop(opts, devices)?,
             Commands::Attach { device, inline } => executor::attach(opts, device, inline)?,
         },
@@ -156,9 +159,9 @@ fn create(opts: executor::Options, config: String) -> Result<()> {
 
     let t = config_to_vde_topology(c);
 
-    executor::write_topology(opts.clone(), t)?;
+    executor::write_topology(opts.clone(), t).context("Writing topology")?;
 
-    let _ = executor::topology_status(opts);
+    executor::topology_status(opts, None).context("Displaying topology status")?;
 
     Ok(())
 }
