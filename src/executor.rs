@@ -33,25 +33,17 @@ pub fn get_topology(opts: &Options) -> Result<crate::vde::Topology> {
     Ok(t)
 }
 
-pub fn topology_start(opts: Options) -> Result<()> {
+pub fn topology_start(opts: Options, devices: Option<Vec<String>>) -> Result<()> {
     let t = get_topology(&opts).context("Gettin topology")?;
 
     for sw in t.get_switches() {
-        let sw_name = sw.get_name();
-        init_dir(sw.base_path(&opts.working_dir))
-            .context(format!("Initializing base dir for {}", sw_name))?;
-
-        if sw.needs_config() {
-            let config = sw.get_config();
-            let path = sw.config_path(&opts.working_dir);
-            fs::write(&path, config.join("\n"))
-                .context(format!("Writing config file for {}", sw_name))?;
+        if let Some(devices) = &devices {
+            if !devices.contains(&sw.get_name().to_owned()) {
+                continue;
+            }
         }
 
-        let cmd = sw.exec_command();
-        let args = sw.exec_args(&opts.working_dir);
-
-        exec(&cmd, &args).context(format!("Starting switch {}", sw_name))?;
+        start_switch(&opts, sw)?;
     }
 
     // For namespaces we need a starter script in order to save
@@ -64,79 +56,135 @@ pub fn topology_start(opts: Options) -> Result<()> {
     file.set_permissions(PermissionsExt::from_mode(0o755))
         .context("Setting permissions on starter script")?;
 
+    let script_path = script_path.to_str().unwrap().to_owned();
     for ns in t.get_namespaces() {
-        let ns_name = ns.get_name();
-
-        let cmd = ns.exec_command();
-        let args = ns.exec_args(&opts.working_dir, script_path.to_str().unwrap());
-
-        // Namespaces need to be started in a new terminal
-
-        exec_terminal(&opts.terminal, &opts.terminal_args, &cmd, &args)
-            .context(format!("Starting namespace {}", ns_name))?;
-
-        // Need to configure the namespace
-        thread::sleep(std::time::Duration::new(1, 0));
-        // The following format i choosen by the ns_starter.sh script
-        let path = format!("{}/{}.pid", &opts.working_dir, ns.get_name());
-        let pid = fs::read_to_string(&path)
-            .context(format!("Reading pid file for {}", ns.get_name()))?
-            .trim()
-            .to_owned();
-
-        // I don't like the following part. It's too hardcoded
-        for (i, el) in ns.get_interfaces().iter().enumerate() {
-            let interface_name = el.get_name();
-            ns_exec(
-                &pid,
-                &format!("ip link set vde{} name {}", &i, interface_name),
-            )
-            .context(format!(
-                "Changin name to interface {} on {}",
-                interface_name, ns_name
-            ))?;
-            thread::sleep(std::time::Duration::from_millis(100));
-
-            ns_exec(
-                &pid,
-                &format!("ip addr add {} dev {}", el.get_ip(), el.get_name()),
-            )
-            .context(format!(
-                "Adding ip to interface {} on {}",
-                interface_name, ns_name
-            ))?;
-            thread::sleep(std::time::Duration::from_millis(100));
-
-            ns_exec(&pid, &format!("ip link set {} up", el.get_name())).context(format!(
-                "Bringing up interface {} on {}",
-                interface_name, ns_name
-            ))?;
-            thread::sleep(std::time::Duration::from_millis(100));
-
-            ns_exec(&pid, "ip link set lo up")
-                .context(format!("Bringing up localhost interface on {}", ns_name))?;
-            thread::sleep(std::time::Duration::from_millis(100));
+        if let Some(devices) = &devices {
+            if !devices.contains(&ns.get_name().to_owned()) {
+                continue;
+            }
         }
+
+        start_namespace(&opts, ns, &script_path)?;
+        configure_namespace(&opts, ns)?;
     }
 
     for conn in t.get_connections() {
-        init_dir(conn.base_path(&opts.working_dir))
-            .context(format!("Initializing base dir for {}", conn.name))?;
-
-        let cmd = conn.exec_command();
-        let args = conn.exec_args(&opts.working_dir);
-
-        if conn.needs_config() {
-            let config = conn.get_config();
-            let path = conn.config_path(&opts.working_dir);
-            fs::write(&path, config.join("\n"))
-                .context(format!("Writing config file for {}", conn.name))?;
+        if let Some(devices) = &devices {
+            if !devices.contains(&conn.name) {
+                continue;
+            }
         }
 
-        exec(&cmd, &args).context(format!("Starting connection {}", conn.name))?;
+        init_dir(conn.base_path(&opts.working_dir))
+            .context(format!("Initializing base dir for {}", conn.name))?;
+        configure_connection(&opts, conn)?;
     }
 
     Ok(())
+}
+
+fn start_switch(opts: &Options, sw: &crate::vde::Switch) -> Result<()> {
+    let sw_name = sw.get_name();
+    init_dir(sw.base_path(&opts.working_dir))
+        .context(format!("Initializing base dir for {}", sw_name))?;
+
+    if sw.needs_config() {
+        let config = sw.get_config();
+        let path = sw.config_path(&opts.working_dir);
+        fs::write(&path, config.join("\n"))
+            .context(format!("Writing config file for {}", sw_name))?;
+    }
+
+    let cmd = sw.exec_command();
+    let args = sw.exec_args(&opts.working_dir);
+
+    exec(&cmd, &args).context(format!("Starting switch {}", sw_name))
+}
+
+fn start_namespace(opts: &Options, ns: &crate::vde::Namespace, script_path: &str) -> Result<()> {
+    let ns_name = ns.get_name();
+
+    let cmd = ns.exec_command();
+    let args = ns.exec_args(&opts.working_dir, script_path);
+
+    // Namespaces need to be started in a new terminal
+
+    exec_terminal(&opts.terminal, &opts.terminal_args, &cmd, &args)
+        .context(format!("Starting namespace {}", ns_name))
+}
+
+fn configure_namespace(opts: &Options, ns: &crate::vde::Namespace) -> Result<()> {
+    // Need to configure the namespace
+    let ns_name = ns.get_name();
+
+    thread::sleep(std::time::Duration::new(1, 0));
+    // The following format i choosen by the ns_starter.sh script
+    let path = format!("{}/{}.pid", &opts.working_dir, ns.get_name());
+    let pid = fs::read_to_string(&path)
+        .context(format!("Reading pid file for {}", ns.get_name()))?
+        .trim()
+        .to_owned();
+
+    // I don't like the following part. It's too hardcoded
+    for (i, el) in ns.get_interfaces().iter().enumerate() {
+        configure_interface(opts, &pid, &ns_name, &el, i)?;
+    }
+
+    Ok(())
+}
+
+fn configure_interface(
+    _opts: &Options,
+    pid: &str,
+    ns_name: &str,
+    el: &crate::vde::NSInterface,
+    i: usize,
+) -> Result<()> {
+    let interface_name = el.get_name();
+    ns_exec(
+        &pid,
+        &format!("ip link set vde{} name {}", &i, interface_name),
+    )
+    .context(format!(
+        "Changin name to interface {} on {}",
+        interface_name, ns_name
+    ))?;
+    thread::sleep(std::time::Duration::from_millis(100));
+
+    ns_exec(
+        &pid,
+        &format!("ip addr add {} dev {}", el.get_ip(), el.get_name()),
+    )
+    .context(format!(
+        "Adding ip to interface {} on {}",
+        interface_name, ns_name
+    ))?;
+    thread::sleep(std::time::Duration::from_millis(100));
+
+    ns_exec(&pid, &format!("ip link set {} up", el.get_name())).context(format!(
+        "Bringing up interface {} on {}",
+        interface_name, ns_name
+    ))?;
+    thread::sleep(std::time::Duration::from_millis(100));
+
+    ns_exec(&pid, "ip link set lo up")
+        .context(format!("Bringing up localhost interface on {}", ns_name))?;
+
+    Ok(())
+}
+
+fn configure_connection(opts: &Options, conn: &crate::vde::Connection) -> Result<()> {
+    let cmd = conn.exec_command();
+    let args = conn.exec_args(&opts.working_dir);
+
+    if conn.needs_config() {
+        let config = conn.get_config();
+        let path = conn.config_path(&opts.working_dir);
+        fs::write(&path, config.join("\n"))
+            .context(format!("Writing config file for {}", conn.name))?;
+    }
+
+    exec(&cmd, &args).context(format!("Starting connection {}", conn.name))
 }
 
 fn init(opts: &Options) -> Result<()> {

@@ -45,14 +45,13 @@ imaginet add -> Aggiungere un componente alla rete corrente.
 imaginet rm -> Aggiungere un componente alla rete corrente.
 imaginet dump -> Dump della rete corrente in file di configurazione.
 imaginet stop _ -> Stoppare un determinato componente della rete.
-imaginet start _ -> Far partire un determinato componente della rete se fermato.
 imaginet clear -> Pulire la topologia corrente. (Fa anche stop).
 
 Il comando stop dovrebbe chiudere dolcemente tutto senza killare il pid :)
 
 Stop non controlla se la roba si ferma realmente.
 
-Aggiungere quello che manda: router, vdeplug vari ed eventuali
+Aggiungere quello che manca: router, vdeplug vari ed eventuali
 
 Aggiungere la modalità verbosa (-v -vv -vvv) per debuggare.
 
@@ -65,8 +64,6 @@ Check per vedere che tutti gli eseguibili siano presenti. (Check sulla versione?
 
 Aggiungere parametri arbitrari ai comandi per future implementazioni (senza dover
 aggiornare per forza anche il codice di imaginet).
-
-Generalizzare il terminale (no foot) :)
 
 Fare test?
 

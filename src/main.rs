@@ -46,7 +46,10 @@ enum Commands {
     },
 
     #[command(about = "Start a topology")]
-    Start {},
+    Start {
+        /// List of device names to start
+        devices: Option<Vec<String>>,
+    },
 
     #[command(about = "Status of running topology")]
     Status {},
@@ -129,7 +132,7 @@ fn main() -> Result<()> {
     match args.command {
         Some(command) => match command {
             Commands::Create { config } => create(opts, config)?,
-            Commands::Start {} => executor::topology_start(opts)?,
+            Commands::Start { devices } => executor::topology_start(opts, devices)?,
             Commands::Status {} => executor::topology_status(opts)?,
             Commands::Stop {} => executor::topology_stop(opts)?,
             Commands::Attach { device, inline } => executor::attach(opts, device, inline)?,
