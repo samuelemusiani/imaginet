@@ -93,6 +93,29 @@ impl Namespace {
         ]
     }
 
+    /// Returns the command to execute in order to execute a command
+    /// inside the namespace. This is different from exec_command in which the
+    /// command returned is used to start the namespace
+    pub fn exec_command_command(&self) -> String {
+        self.attach_command()
+    }
+
+    /// Returns the arguments to execute in order to execute a command inside
+    /// the namespace. This is different from exec_args in which the arguments
+    /// returned are used to start the namespace. This function is used with
+    /// the exec_command_command function
+    pub fn exec_command_args(
+        &self,
+        _base: &str,
+        pid: u32,
+        command: &mut Vec<String>,
+    ) -> Vec<String> {
+        let mut args = self.attach_args(_base, pid);
+        args.append(command);
+
+        return args;
+    }
+
     pub fn get_starter_script() -> &'static [u8] {
         STARTER_SCRIPT
     }

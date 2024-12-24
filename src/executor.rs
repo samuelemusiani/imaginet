@@ -6,6 +6,7 @@ use std::{fs, process, thread};
 //use core::time;
 
 const NS_STARTER: &str = "./ns_starter.sh";
+const DEAD_ERR: &str = "Device not alive";
 
 #[derive(Clone)]
 pub struct Options {
@@ -412,9 +413,8 @@ pub fn topology_stop(opts: Options, devices: Option<Vec<String>>) -> Result<()> 
     Ok(())
 }
 
-pub fn attach(opts: Options, device: String, inline: bool) -> Result<()> {
+pub fn topology_attach(opts: Options, device: String, inline: bool) -> Result<()> {
     let t = get_topology(&opts).context("Gettin topology")?;
-    const DEAD_ERR: &str = "Device not alive";
 
     for sw in t.get_switches() {
         let sw_name = sw.get_name();
@@ -486,4 +486,66 @@ pub fn attach(opts: Options, device: String, inline: bool) -> Result<()> {
     }
 
     Err(anyhow!("Device not found"))
+}
+
+/// Execute a command inside a device. This genereally use vdecmd, but if a
+/// namespace is provided, it uses nsenter
+pub fn topology_exec(opts: Options, device: String, command: Vec<String>) -> Result<()> {
+    let t = get_topology(&opts).context("Gettin topology")?;
+
+    let mut command = command;
+
+    for sw in t.get_switches() {
+        if sw.get_name() != &device {
+            continue;
+        }
+
+        let path = sw.pid_path(&opts.working_dir);
+        if !pid_path_is_alive(&path)? {
+            return Err(anyhow!(DEAD_ERR));
+        }
+
+        let cmd = sw.exec_command_command();
+        let args = sw.exec_command_args(&opts.working_dir, command.as_mut());
+
+        exec_inline(&cmd, &args).context("Executing command inside switch")?;
+        return Ok(());
+    }
+
+    for ns in t.get_namespaces() {
+        if ns.get_name() != &device {
+            continue;
+        }
+
+        let path = ns.pid_path(&opts.working_dir);
+        if !pid_path_is_alive(&path)? {
+            return Err(anyhow!(DEAD_ERR));
+        }
+
+        let pid = fs::read_to_string(&path)?.trim().parse().unwrap();
+        let cmd = ns.exec_command_command();
+        let args = ns.exec_command_args(&opts.working_dir, pid, command.as_mut());
+
+        exec_inline(&cmd, &args).context("Executing command inside namespace")?;
+        return Ok(());
+    }
+
+    for conn in t.get_connections() {
+        if conn.name != device {
+            continue;
+        }
+
+        let path = conn.pid_path(&opts.working_dir);
+        if !pid_path_is_alive(&path)? {
+            return Err(anyhow!(DEAD_ERR));
+        }
+
+        let cmd = conn.exec_command_command()?;
+        let args = conn.exec_command_args(&opts.working_dir, command.as_mut())?;
+
+        exec_inline(&cmd, &args).context("Executing command inside connection")?;
+        return Ok(());
+    }
+
+    todo!()
 }

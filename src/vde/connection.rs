@@ -154,4 +154,34 @@ impl Connection {
             ))
         }
     }
+
+    /// Returns the command to execute in order to execute a command
+    /// inside the switch. This is different from exec_command in which the
+    /// command returned is used to start the switch
+    pub fn exec_command_command(&self) -> Result<String> {
+        if self.wirefilter {
+            Ok(String::from("vdecmd"))
+        } else {
+            Err(anyhow::anyhow!(
+                "Simple connections (no wirefilter) can't be attached"
+            ))
+        }
+    }
+
+    /// Returns the arguments to execute in order to execute a command inside
+    /// the switch. This is different from exec_args in which the arguments
+    /// returned are used to start the switch. This function is used with
+    /// the exec_command_command function
+    pub fn exec_command_args(&self, base: &str, command: &mut Vec<String>) -> Result<Vec<String>> {
+        if !self.wirefilter {
+            return Err(anyhow::anyhow!(
+                "Simple connections (no wirefilter) can't be attached"
+            ));
+        }
+
+        let mut args = vec!["-s".to_owned(), self.mgmt_path(base)?];
+        args.append(command);
+
+        return Ok(args);
+    }
 }

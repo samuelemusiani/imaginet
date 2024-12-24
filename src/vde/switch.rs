@@ -133,6 +133,24 @@ impl Switch {
         let sock_p = self.mgmt_path(base);
         vec![sock_p]
     }
+
+    /// Returns the command to execute in order to execute a command
+    /// inside the switch. This is different from exec_command in which the
+    /// command returned is used to start the switch
+    pub fn exec_command_command(&self) -> String {
+        String::from("vdecmd")
+    }
+
+    /// Returns the arguments to execute in order to execute a command inside
+    /// the switch. This is different from exec_args in which the arguments
+    /// returned are used to start the switch. This function is used with
+    /// the exec_command_command function
+    pub fn exec_command_args(&self, base: &str, command: &mut Vec<String>) -> Vec<String> {
+        let mut args = vec!["-s".to_owned(), self.mgmt_path(base)];
+        args.append(command);
+
+        return args;
+    }
 }
 
 #[cfg(test)]

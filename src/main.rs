@@ -62,6 +62,15 @@ enum Commands {
         /// List of device names to stop
         devices: Option<Vec<String>>,
     },
+
+    #[command(about = "Execute a command in a device")]
+    Exec {
+        /// Name of the device in which to execute the command
+        device: String,
+
+        /// Command to execute with arguments
+        command: Vec<String>,
+    },
 }
 
 #[derive(serde::Deserialize)]
@@ -137,11 +146,12 @@ fn main() -> Result<()> {
 
     match args.command {
         Some(command) => match command {
-            Commands::Create { config } => create(opts, config)?,
+            Commands::Create { config } => topology_create(opts, config)?,
             Commands::Start { devices } => executor::topology_start(opts, devices)?,
             Commands::Status { devices } => executor::topology_status(opts, devices)?,
             Commands::Stop { devices } => executor::topology_stop(opts, devices)?,
-            Commands::Attach { device, inline } => executor::attach(opts, device, inline)?,
+            Commands::Attach { device, inline } => executor::topology_attach(opts, device, inline)?,
+            Commands::Exec { device, command } => executor::topology_exec(opts, device, command)?,
         },
         None => {
             eprintln!("No command provided");
@@ -152,7 +162,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn create(opts: executor::Options, config: String) -> Result<()> {
+fn topology_create(opts: executor::Options, config: String) -> Result<()> {
     let file = fs::read_to_string(config).context("Reading config file")?;
 
     let c = config::Config::from_string(&file).context("Parsing config")?;

@@ -40,7 +40,6 @@ vdeplug4 ?
 
 # TODO
 
-imaginet exec -> Eseguire un comanod in uno switch/router con il socket di management.
 imaginet add -> Aggiungere un componente alla rete corrente.
 imaginet rm -> Aggiungere un componente alla rete corrente.
 imaginet dump -> Dump della rete corrente in file di configurazione.
