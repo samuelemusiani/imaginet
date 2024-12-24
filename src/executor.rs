@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Context, Result};
 use colored::Colorize;
-use std::os::unix::process::CommandExt; // Used for exec()
+use std::io::Write;
+use std::os::unix::{fs::PermissionsExt, process::CommandExt}; // Used for exec(), and permissions set on the namespace starter script
 use std::{fs, process, thread};
 //use core::time;
 
@@ -53,11 +54,21 @@ pub fn topology_start(opts: Options) -> Result<()> {
         exec(&cmd, &args).context(format!("Starting switch {}", sw_name))?;
     }
 
+    // For namespaces we need a starter script in order to save
+    // some information, such as the pid
+    let script = crate::vde::Namespace::get_starter_script();
+    let script_path = std::path::PathBuf::from(&opts.working_dir).join(NS_STARTER);
+    let mut file = fs::File::create(&script_path).context("Creating starter script")?;
+    file.write(script)
+        .context("Writing starter script into file")?;
+    file.set_permissions(PermissionsExt::from_mode(0o755))
+        .context("Setting permissions on starter script")?;
+
     for ns in t.get_namespaces() {
         let ns_name = ns.get_name();
 
         let cmd = ns.exec_command();
-        let args = ns.exec_args(&opts.working_dir, NS_STARTER);
+        let args = ns.exec_args(&opts.working_dir, script_path.to_str().unwrap());
 
         // Namespaces need to be started in a new terminal
 

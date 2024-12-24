@@ -5,7 +5,7 @@ switch:
     #ports: 2
     # hub: true
 
-  - name: sw2
+  # - name: sw2
 
 namespace:
   - name: ns1
@@ -56,13 +56,13 @@ namespace:
   #       ip: 10.1.0.2/24
 
 #
-connections:
-  - name: conn1
-    endpoint_a:
-      name: sw1
-      port: 4
-    endpoint_b:
-      name: sw2
-      port: 5
-    wirefilter: true
-    config: ./conn1.conf
+# connections:
+#   - name: conn1
+#     endpoint_a:
+#       name: sw1
+#       port: 4
+#     endpoint_b:
+#       name: sw2
+#       port: 5
+#     wirefilter: true
+#     config: ./conn1.conf

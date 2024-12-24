@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
+const STARTER_SCRIPT: &[u8] = include_bytes!("ns_starter.sh");
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Namespace {
     name: String,
@@ -88,6 +90,10 @@ impl Namespace {
             "-n".to_owned(),
             "--keep-caps".to_owned(),
         ]
+    }
+
+    pub fn get_starter_script() -> &'static [u8] {
+        STARTER_SCRIPT
     }
 }
 
