@@ -123,52 +123,38 @@ fn configure_namespace(opts: &Options, ns: &crate::vde::Namespace) -> Result<()>
     let pid = fs::read_to_string(&path)
         .context(format!("Reading pid file for {}", ns.get_name()))?
         .trim()
-        .to_owned();
+        .parse()
+        .unwrap();
 
-    // I don't like the following part. It's too hardcoded
+    let cmd = ns.exec_command_command();
+    let ns_exec = |command: &str| -> Result<()> {
+        let mut args = command
+            .split_whitespace()
+            .map(|s| s.to_owned())
+            .collect::<Vec<String>>();
+
+        let args = ns.exec_command_args(&opts.working_dir, pid, args.as_mut());
+
+        exec(&cmd, &args)
+    };
+
     for (i, el) in ns.get_interfaces().iter().enumerate() {
-        configure_interface(opts, &pid, &ns_name, &el, i)?;
+        let interface_name = el.get_name();
+
+        let v = vec![
+            format!("ip link set {} name vde{}", interface_name, i),
+            format!("ip addr add {} dev vde{}", el.get_ip(), i),
+            format!("ip link set vde{} up", i),
+        ];
+
+        for command in v {
+            ns_exec(&command).context(format!(
+                "Executing command '{}' on interface {} on {}",
+                command, interface_name, ns_name
+            ))?;
+            thread::sleep(std::time::Duration::from_millis(100));
+        }
     }
-
-    Ok(())
-}
-
-fn configure_interface(
-    _opts: &Options,
-    pid: &str,
-    ns_name: &str,
-    el: &crate::vde::NSInterface,
-    i: usize,
-) -> Result<()> {
-    let interface_name = el.get_name();
-    ns_exec(
-        &pid,
-        &format!("ip link set vde{} name {}", &i, interface_name),
-    )
-    .context(format!(
-        "Changin name to interface {} on {}",
-        interface_name, ns_name
-    ))?;
-    thread::sleep(std::time::Duration::from_millis(100));
-
-    ns_exec(
-        &pid,
-        &format!("ip addr add {} dev {}", el.get_ip(), el.get_name()),
-    )
-    .context(format!(
-        "Adding ip to interface {} on {}",
-        interface_name, ns_name
-    ))?;
-    thread::sleep(std::time::Duration::from_millis(100));
-
-    ns_exec(&pid, &format!("ip link set {} up", el.get_name())).context(format!(
-        "Bringing up interface {} on {}",
-        interface_name, ns_name
-    ))?;
-    thread::sleep(std::time::Duration::from_millis(100));
-
-    ns_exec(&pid, "ip link set lo up")
-        .context(format!("Bringing up localhost interface on {}", ns_name))?;
 
     Ok(())
 }
@@ -241,31 +227,6 @@ fn exec_inline(cmd: &str, args: &Vec<String>) -> Result<()> {
     Err(anyhow!(
         "Executing command '{cmd}'\nargs: {args:#?}\nError: {err}"
     ))
-}
-
-/// Execute a command inside a namespace identified by pid
-fn ns_exec(pid: &str, command: &str) -> Result<()> {
-    let cmd = "nsenter";
-    let mut base_args = vec![
-        "-t".to_owned(),
-        pid.to_owned(),
-        "--preserve-credentials".to_owned(),
-        "-U".to_owned(),
-        "-n".to_owned(),
-        "--keep-caps".to_owned(),
-    ];
-
-    let args = command
-        .split_whitespace()
-        .map(|s| s.to_owned())
-        .collect::<Vec<String>>();
-
-    base_args.extend(args);
-
-    exec(cmd, &base_args).context(format!(
-        "Executing command {cmd} in namespace failed.\n{base_args:#?}"
-    ))?;
-    Ok(())
 }
 
 pub fn write_topology(opts: Options, t: crate::vde::Topology) -> Result<()> {
