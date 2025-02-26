@@ -104,18 +104,24 @@ fn start_switch(opts: &Options, sw: &crate::vde::Switch) -> Result<()> {
 }
 
 fn start_namespace(opts: &Options, ns: &crate::vde::Namespace, script_path: &str) -> Result<()> {
+    log::trace!("Starting namespace {}", ns.get_name());
     let ns_name = ns.get_name();
 
     let cmd = ns.exec_command();
+    log::debug!("Command: {}", cmd);
     let args = ns.exec_args(&opts.working_dir, script_path);
+    log::debug!("Args: {:?}", args);
 
     // Namespaces need to be started in a new terminal
 
+    log::debug!("Starting terminal. Terminal: {}", opts.terminal);
+    log::debug!("Terminal args: {:?}", opts.terminal_args);
     exec_terminal(&opts.terminal, &opts.terminal_args, &cmd, &args)
         .context(format!("Starting namespace {}", ns_name))
 }
 
 fn configure_namespace(opts: &Options, ns: &crate::vde::Namespace) -> Result<()> {
+    log::trace!("Configuring namespace");
     // Need to configure the namespace
     let ns_name = ns.get_name();
 
@@ -150,6 +156,13 @@ fn configure_namespace(opts: &Options, ns: &crate::vde::Namespace) -> Result<()>
         ];
 
         for command in v {
+            log::debug!(
+                "Configuring namespace. command: {}, interface: {}, ns: {}",
+                command,
+                interface_name,
+                ns_name
+            );
+
             ns_exec(&command).context(format!(
                 "Executing command '{}' on interface {} on {}",
                 command, interface_name, ns_name
@@ -374,6 +387,7 @@ pub fn topology_stop(opts: Options, devices: Option<Vec<String>>) -> Result<()> 
 }
 
 pub fn topology_attach(opts: Options, device: String, inline: bool) -> Result<()> {
+    log::trace!("Attaching to device {}", device);
     let t = get_topology(&opts).context("Gettin topology")?;
 
     for sw in t.get_switches() {
@@ -381,6 +395,8 @@ pub fn topology_attach(opts: Options, device: String, inline: bool) -> Result<()
         if sw_name != &device {
             continue;
         }
+
+        log::trace!("Attaching to switch {}", sw_name);
 
         let path = sw.pid_path(&opts.working_dir);
         if !pid_path_is_alive(&path)? {
@@ -408,6 +424,8 @@ pub fn topology_attach(opts: Options, device: String, inline: bool) -> Result<()
             continue;
         }
 
+        log::trace!("Attaching to namespace {}", ns.get_name());
+
         let path = ns.pid_path(&opts.working_dir);
         if !pid_path_is_alive(&path)? {
             return Err(anyhow!(ERR_DEAD_DEVICE));
@@ -433,6 +451,8 @@ pub fn topology_attach(opts: Options, device: String, inline: bool) -> Result<()
         if conn.name != device {
             continue;
         }
+
+        log::trace!("Attaching to connection {}", conn.name);
 
         let path = conn.pid_path(&opts.working_dir);
         if !pid_path_is_alive(&path)? {

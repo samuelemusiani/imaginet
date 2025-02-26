@@ -54,7 +54,7 @@ Aggiungere quello che manca: router, vdeplug vari ed eventuali
 Se si fa partire un namespace senza far partire lo switch l'errore non è molto chiaro.
 Andrebbe controllato che la dipendenza sulla connessione sia attiva.
 
-Aggiungere la modalità verbosa (-v -vv -vvv) per debuggare.
+Completare la modalità verbosa in tutto il codice (-v -vv -vvv) per debuggare.
 
 vdens in background? In modo da poter eseguire anche su macchine remote.
 

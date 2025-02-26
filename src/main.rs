@@ -1,7 +1,9 @@
 use anyhow::{Context, Result};
 use clap::Parser;
+use env_logger;
 use home;
-use std::{fs, process};
+use log;
+use std::{fs, io::Write, process};
 
 mod config;
 mod executor;
@@ -26,6 +28,9 @@ struct Args {
 
     #[command(subcommand)]
     pub command: Option<Commands>,
+
+    #[arg(short, long, action = clap::ArgAction::Count, help = "Verbosity level. Can be used multiple times for increased verbosity")]
+    pub verbose: u8,
 }
 
 #[derive(Parser, Debug)]
@@ -99,6 +104,17 @@ impl Config {
 
 fn main() -> Result<()> {
     let args = Args::parse();
+
+    env_logger::Builder::new()
+        .target(env_logger::Target::Stderr)
+        .filter_level(match args.verbose {
+            0 => log::LevelFilter::Warn,
+            1 => log::LevelFilter::Info,
+            2 => log::LevelFilter::Debug,
+            _ => log::LevelFilter::Trace,
+        })
+        .format_timestamp(None)
+        .init();
 
     let conf = if let Some(config) = args.conifg {
         parse_config_file(&config)
@@ -202,9 +218,18 @@ fn config_to_vde_topology(c: config::Config) -> vde::Topology {
 
     if let Some(nss) = &c.namespace {
         for ns in nss {
+            log::debug!("Parsing namespace {}", ns.name);
             let mut n = vde::Namespace::new(ns.name.clone());
             for i in &ns.interfaces {
                 let endp = vde::calculate_endpoint_type(&t, &i.endpoint.name);
+                log::debug!(
+                    "Adding interface {} to namespace {}. Ip: {}, endp: {}, port: {}",
+                    i.name,
+                    ns.name,
+                    i.ip,
+                    endp,
+                    i.endpoint.port.unwrap_or(0)
+                );
                 let ni = vde::NSInterface::new(i.name.clone(), i.ip.clone(), endp, i.endpoint.port);
                 n.add_interface(ni);
             }
