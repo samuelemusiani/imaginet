@@ -144,9 +144,9 @@ fn configure_namespace(opts: &Options, ns: &crate::vde::Namespace) -> Result<()>
         let interface_name = el.get_name();
 
         let v = vec![
-            format!("ip link set {} name vde{}", interface_name, i),
-            format!("ip addr add {} dev vde{}", el.get_ip(), i),
-            format!("ip link set vde{} up", i),
+            format!("ip link set vde{} name {}", i, interface_name),
+            format!("ip addr add {} dev {}", el.get_ip(), interface_name),
+            format!("ip link set {} up", interface_name),
         ];
 
         for command in v {
