@@ -56,6 +56,8 @@ pub fn topology_start(opts: Options, devices: Option<Vec<String>>) -> Result<()>
     file.set_permissions(PermissionsExt::from_mode(0o755))
         .context("Setting permissions on starter script")?;
 
+    drop(file);
+
     let script_path = script_path.to_str().unwrap().to_owned();
     for ns in t.get_namespaces() {
         if let Some(devices) = &devices {
