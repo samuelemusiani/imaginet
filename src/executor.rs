@@ -378,7 +378,7 @@ pub fn topology_attach(opts: Options, device: String, inline: bool) -> Result<()
 
     for sw in t.get_switches() {
         let sw_name = sw.get_name();
-        if sw_name == &device {
+        if sw_name != &device {
             continue;
         }
 
