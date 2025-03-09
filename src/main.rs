@@ -86,7 +86,9 @@ enum AddSubcommands {
     #[command(about = "Add a namespace to the current topology")]
     Namespace {
         /// Name of the namespace. Must be unique in all the topology
-        name: String, // TODO!!
+        name: String,
+
+        interfaces: Vec<String>,
     },
 
     #[command(about = "Add a switch to the current topology")]
@@ -231,7 +233,61 @@ fn main() -> Result<()> {
             Commands::Attach { device, inline } => executor::topology_attach(opts, device, inline)?,
             Commands::Exec { device, command } => executor::topology_exec(opts, device, command)?,
             Commands::Add(d) => match d {
-                AddSubcommands::Namespace { .. } => todo!("Add namespace"),
+                AddSubcommands::Namespace { name, interfaces } => {
+                    println!("Adding namespace {}", name);
+                    println!("Interfaces: {:?}", interfaces);
+
+                    // Interface parsing
+                    let mut tmp: Vec<Vec<String>> = Vec::new();
+
+                    if interfaces[0] != "--iface" {
+                        eprintln!("Interface definition must start with --iface");
+                        process::exit(1);
+                    }
+
+                    for i in interfaces.iter() {
+                        if i == "--iface" {
+                            tmp.push(Vec::new());
+                        } else {
+                            tmp.last_mut()
+                                .ok_or(anyhow::anyhow!("Empty vector"))?
+                                .push(i.clone());
+                        }
+                    }
+
+                    for (n, i) in tmp.iter().enumerate() {
+                        if i.len() < 2 || i.len() > 4 {
+                            eprintln!(
+                                "Interface {n} definition must have between 2 and 4 elements"
+                            );
+                            process::exit(1);
+                        }
+                    }
+
+                    println!("Parsed interfaces: {:?}", tmp);
+
+                    let mut real_interfaces: Vec<config::NSInterface> = Vec::new();
+                    for i in tmp.iter() {
+                        let name = i[0].clone();
+                        let ip = i[1].clone();
+                        let endpoint = config::Endpoint {
+                            name: i[2].clone(),
+                            port: if i.len() == 4 {
+                                Some(i[3].clone().parse()?)
+                            } else {
+                                None
+                            },
+                        };
+
+                        let inter = config::NSInterface { name, ip, endpoint };
+                        inter
+                            .checks()
+                            .context(format!("Checking interface {}", i[0]))?;
+                        real_interfaces.push(inter);
+                    }
+
+                    // add_namespace_to_topology(opts, name, real_interfaces)?;
+                }
                 AddSubcommands::Switch { .. } => todo!("Add switch"),
                 AddSubcommands::Connection { .. } => todo!("Add connection"),
             },

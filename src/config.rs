@@ -218,7 +218,7 @@ impl Namespace {
 }
 
 impl NSInterface {
-    fn checks(&self) -> Result<()> {
+    pub fn checks(&self) -> Result<()> {
         // Check if IP is valid in CIDR notation
         let (ip, mask) = match self.ip.find('/') {
             Some(p) => (&self.ip[..p], &self.ip[p + 1..]),
