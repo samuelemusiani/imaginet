@@ -35,6 +35,9 @@ struct Args {
 
 #[derive(Parser, Debug)]
 enum Commands {
+    #[command(subcommand)]
+    Add(AddSubcommands),
+
     #[command(about = "Attach to a device in a topology")]
     Attach {
         #[arg(short, long, help = "Attach inline: do not open a new terminal")]
@@ -77,6 +80,58 @@ enum Commands {
         command: Vec<String>,
     },
 }
+
+#[derive(Parser, Debug)]
+enum AddSubcommands {
+    #[command(about = "Add a namespace to the current topology")]
+    Namespace {
+        /// Name of the namespace. Must be unique in all the topology
+        name: String
+
+
+        // TODO!!
+    },
+
+    #[command(about = "Add a switch to the current topology")]
+    Switch {
+        /// Name of the switch. Must be unique in all the topology
+        name: String,
+
+        #[arg(short, long, help = "Set number of ports for the switch")]
+        ports: Option<u16>,
+
+        #[arg(short = 'd', long, help = "Set the switch to be a hub")]
+        hub: bool,
+
+        #[arg(short, long, help = "Load config from file", value_name = "PATH")]
+        config: Option<String>
+    },
+
+    #[command(about = "Add a connection to the current topology")]
+    Connection {
+        /// Name of the connection. Must be unique in all the topology
+        name: String,
+
+        /// Name of the first endpoint
+        a: String,
+
+        #[arg(long, help = "Port number on endpoint A", value_name = "PORT")]
+        port_a: Option<String>,
+
+        /// Name of the second endpoint
+        b: String,
+
+        #[arg(long, help = "Port number on endpoint A", value_name = "PORT")]
+        port_b: Option<String>,
+
+        #[arg(short, long, help = "Make the connection with wirefilter", group="wr")]
+        wirefilter: bool,
+
+        #[arg(short, long, help = "Load config from file. Only valid if wirefilter is specified", requires="wirefilter", value_name = "PATH")]
+        config: Option<String>
+    },
+}
+
 
 #[derive(serde::Deserialize)]
 struct Terminal {
@@ -168,6 +223,13 @@ fn main() -> Result<()> {
             Commands::Stop { devices } => executor::topology_stop(opts, devices)?,
             Commands::Attach { device, inline } => executor::topology_attach(opts, device, inline)?,
             Commands::Exec { device, command } => executor::topology_exec(opts, device, command)?,
+            Commands::Add (d) => {
+                match d {
+                    AddSubcommands::Namespace { .. } => todo!("Add namespace"),
+                    AddSubcommands::Switch { .. } => todo!("Add switch"),
+                    AddSubcommands::Connection { .. } => todo!("Add connection"),
+                }
+            }
         },
         None => {
             eprintln!("No command provided");
