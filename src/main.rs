@@ -88,6 +88,9 @@ enum AddSubcommands {
         /// Name of the namespace. Must be unique in all the topology
         name: String,
 
+        /// List of interfaces for the namespace. Each interface must start with --iface
+        /// and should have the following format: --iface <name> <ip> <endpoint> [<port>]
+        #[clap(verbatim_doc_comment)]
         interfaces: Vec<String>,
     },
 
