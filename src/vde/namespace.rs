@@ -139,13 +139,13 @@ impl NSInterface {
         &self.ip
     }
 
-    pub fn get_endpoint(&self) -> &String {
-        &self.endpoint
-    }
-
-    pub fn get_port(&self) -> Option<u32> {
-        self.port
-    }
+    //pub fn get_endpoint(&self) -> &String {
+    //    &self.endpoint
+    //}
+    //
+    //pub fn get_port(&self) -> Option<u32> {
+    //    self.port
+    //}
 }
 
 #[cfg(test)]

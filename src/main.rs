@@ -1,6 +1,5 @@
 use anyhow::{Context, Result};
 use clap::Parser;
-use colored::Colorize;
 use env_logger;
 use home;
 use log;
