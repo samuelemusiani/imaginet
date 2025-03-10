@@ -30,16 +30,53 @@ impl Topology {
         }
     }
 
-    pub fn add_switch(&mut self, sw: Switch) {
+    fn is_name_used(&mut self, name: &str) -> bool {
+        for sw in &self.switches {
+            if sw.get_name() == name {
+                return true;
+            }
+        }
+
+        for ns in &self.namespaces {
+            if ns.get_name() == name {
+                return true;
+            }
+        }
+
+        for con in &self.connections {
+            if con.get_name() == name {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    pub fn add_switch(&mut self, sw: Switch) -> Result<()> {
+        if self.is_name_used(sw.get_name()) {
+            anyhow::bail!("Name already used");
+        }
         self.switches.push(sw);
+
+        Ok(())
     }
 
-    pub fn add_namespace(&mut self, ns: Namespace) {
+    pub fn add_namespace(&mut self, ns: Namespace) -> Result<()> {
+        if self.is_name_used(ns.get_name()) {
+            anyhow::bail!("Name already used");
+        }
         self.namespaces.push(ns);
+
+        Ok(())
     }
 
-    pub fn add_connection(&mut self, c: Connection) {
+    pub fn add_connection(&mut self, c: Connection) -> Result<()> {
+        if self.is_name_used(c.get_name()) {
+            anyhow::bail!("Name already used");
+        }
         self.connections.push(c);
+
+        Ok(())
     }
 
     pub fn get_switches(&self) -> &Vec<Switch> {

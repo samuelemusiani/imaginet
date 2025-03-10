@@ -4,7 +4,7 @@ use colored::Colorize;
 use env_logger;
 use home;
 use log;
-use std::{fs, io::Write, process};
+use std::{fs, process};
 
 mod config;
 mod executor;
@@ -304,7 +304,8 @@ fn main() -> Result<()> {
                             ns.add_interface(ni);
                         }
 
-                        t.add_namespace(ns);
+                        t.add_namespace(ns)
+                            .context("Adding namespace to topology")?;
                     }
                     AddSubcommands::Switch {
                         name,
@@ -327,7 +328,7 @@ fn main() -> Result<()> {
                             s.set_hub(hub);
                         }
 
-                        t.add_switch(s);
+                        t.add_switch(s).context("Adding switch to topology")?;
                     }
                     AddSubcommands::Connection {
                         name,
@@ -355,7 +356,8 @@ fn main() -> Result<()> {
                             conf.lines().for_each(|l| conn.add_config(l.to_owned()));
                         }
 
-                        t.add_connection(conn);
+                        t.add_connection(conn)
+                            .context("Adding connection to topology")?;
                     }
                 }
 
@@ -407,7 +409,7 @@ fn config_to_vde_topology(c: config::Config) -> Result<vde::Topology> {
                 s.set_hub(hub);
             }
 
-            t.add_switch(s);
+            t.add_switch(s).context("Adding switch to topology")?;
         }
     }
 
@@ -428,7 +430,7 @@ fn config_to_vde_topology(c: config::Config) -> Result<vde::Topology> {
                 let ni = vde::NSInterface::new(i.name.clone(), i.ip.clone(), endp, i.endpoint.port);
                 n.add_interface(ni);
             }
-            t.add_namespace(n);
+            t.add_namespace(n).context("Adding namespace to topology")?;
         }
     }
 
@@ -446,7 +448,8 @@ fn config_to_vde_topology(c: config::Config) -> Result<vde::Topology> {
                 conf.lines().for_each(|l| conn.add_config(l.to_owned()));
             }
 
-            t.add_connection(conn);
+            t.add_connection(conn)
+                .context("Adding connection to topology")?;
         }
     }
 
