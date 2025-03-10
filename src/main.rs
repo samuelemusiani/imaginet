@@ -35,10 +35,10 @@ struct Args {
 
 #[derive(Parser, Debug)]
 enum Commands {
-    #[command(subcommand)]
+    #[command(subcommand, about = "Add a device to the current topology")]
     Add(AddSubcommands),
 
-    #[command(about = "Attach to a device in a topology")]
+    #[command(about = "Attach to a device in the topology")]
     Attach {
         #[arg(short, long, help = "Attach inline: do not open a new terminal")]
         inline: bool,
@@ -49,8 +49,8 @@ enum Commands {
 
     #[command(about = "Create a topology")]
     Create {
-        /// Path to configuration file
-        config: String,
+        /// Path to configuration file. If not provided, an empty topology is created
+        config: Option<String>,
     },
 
     #[command(about = "Execute a command in a device")]
@@ -68,7 +68,7 @@ enum Commands {
         device: String,
     },
 
-    #[command(about = "Start a topology")]
+    #[command(about = "Start devices in the current topology")]
     Start {
         /// List of device names to start
         devices: Option<Vec<String>>,
@@ -80,7 +80,7 @@ enum Commands {
         devices: Option<Vec<String>>,
     },
 
-    #[command(about = "Stop a topology")]
+    #[command(about = "Stop devices in the current topology")]
     Stop {
         /// List of device names to stop
         devices: Option<Vec<String>>,
@@ -379,12 +379,17 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn topology_create(opts: executor::Options, config: String) -> Result<()> {
-    let file = fs::read_to_string(config).context("Reading config file")?;
+fn topology_create(opts: executor::Options, config: Option<String>) -> Result<()> {
+    let t;
+    if let Some(config) = config {
+        let file = fs::read_to_string(config).context("Reading config file")?;
 
-    let c = config::Config::from_string(&file).context("Parsing config")?;
+        let c = config::Config::from_string(&file).context("Parsing config")?;
 
-    let t = config_to_vde_topology(c).context("Converting config to vde topology")?;
+        t = config_to_vde_topology(c).context("Converting config to vde topology")?;
+    } else {
+        t = vde::Topology::new();
+    }
 
     executor::write_topology(opts.clone(), t).context("Writing topology")?;
 
