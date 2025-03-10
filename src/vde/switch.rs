@@ -30,10 +30,16 @@ impl Switch {
     }
 
     pub fn add_config(&mut self, config: String) {
+        // Should check if the config is valid
         self.config.push(config);
     }
 
+    // If ports = 0, DEFAULT_PORTS is used
     pub fn set_ports(&mut self, ports: u32) {
+        if ports == 0 {
+            self.ports = DEFAULT_PORTS;
+            return;
+        }
         self.ports = ports;
     }
 

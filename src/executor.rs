@@ -251,8 +251,6 @@ pub fn write_topology(opts: Options, t: crate::vde::Topology) -> Result<()> {
     let path = &format!("{}/topology", &opts.working_dir);
     fs::write(&path, t).context(format!("Writing topology on file {path}"))?;
 
-    println!("{}", "--- Topology created ---\n".bold());
-
     Ok(())
 }
 

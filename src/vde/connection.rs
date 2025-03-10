@@ -34,6 +34,10 @@ impl Connection {
         }
     }
 
+    pub fn get_name(&self) -> &String {
+        &self.name
+    }
+
     pub fn add_config(&mut self, config: String) {
         self.config.push(config);
     }
