@@ -53,6 +53,9 @@ enum Commands {
         config: Option<String>,
     },
 
+    #[command(about = "Stop and delete the current topology")]
+    Clear {},
+
     #[command(about = "Execute a command in a device")]
     Exec {
         /// Name of the device in which to execute the command
@@ -236,6 +239,10 @@ fn main() -> Result<()> {
     match args.command {
         Some(command) => match command {
             Commands::Create { config } => topology_create(opts, config)?,
+            Commands::Clear {} => {
+                executor::topology_stop(&opts, None)?;
+                executor::clear_topology(&opts)?;
+            }
             Commands::Start { devices } => executor::topology_start(opts, devices)?,
             Commands::Status { devices } => executor::topology_status(opts, devices)?,
             Commands::Stop { devices } => executor::topology_stop(&opts, devices)?,

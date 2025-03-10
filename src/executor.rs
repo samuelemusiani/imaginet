@@ -533,3 +533,7 @@ pub fn topology_exec(opts: Options, device: String, command: Vec<String>) -> Res
 
     Err(anyhow!("Device not found"))
 }
+
+pub fn clear_topology(opts: &Options) -> Result<()> {
+    fs::remove_dir_all(&opts.working_dir).context("Removing working directory")
+}

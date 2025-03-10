@@ -41,7 +41,6 @@ vdeplug4 ?
 # TODO
 
 imaginet dump -> Dump della rete corrente in file di configurazione.
-imaginet clear -> Pulire la topologia corrente. (Fa anche stop).
 
 Il comando stop dovrebbe chiudere dolcemente tutto senza killare il pid :)
 
