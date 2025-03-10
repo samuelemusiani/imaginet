@@ -91,6 +91,50 @@ impl Topology {
         &self.connections
     }
 
+    pub fn remove_device(&mut self, name: &String) -> Result<()> {
+        self.check_dependecy(name)?;
+
+        if let Some(pos) = self.switches.iter().position(|x| x.get_name() == name) {
+            self.switches.remove(pos);
+            return Ok(());
+        };
+
+        if let Some(pos) = self.namespaces.iter().position(|x| x.get_name() == name) {
+            self.namespaces.remove(pos);
+            return Ok(());
+        };
+
+        if let Some(pos) = self.connections.iter().position(|x| x.get_name() == name) {
+            self.connections.remove(pos);
+            return Ok(());
+        };
+
+        Ok(())
+    }
+
+    fn check_dependecy(&self, name: &String) -> Result<()> {
+        dbg!("check_dependency");
+        dbg!(name);
+
+        for con in &self.connections {
+            let eqa = con.get_a().split('/').any(|x| x == name);
+            let eqb = con.get_b().split('/').any(|x| x == name);
+            if eqa || eqb {
+                anyhow::bail!("Device {} is connected to a connection", name);
+            }
+        }
+
+        for ns in &self.namespaces {
+            for i in ns.get_interfaces() {
+                if i.get_endpoint() == name {
+                    anyhow::bail!("Device {} is connected to a namespace", name);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn to_string(&self) -> Result<String> {
         serde_yaml::to_string(self).map_err(anyhow::Error::new)
     }

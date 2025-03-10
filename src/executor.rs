@@ -335,7 +335,7 @@ fn pid_is_alive(pid: &str) -> bool {
 }
 
 /// If None is provided as devices, all devices are stopped
-pub fn topology_stop(opts: Options, devices: Option<Vec<String>>) -> Result<()> {
+pub fn topology_stop(opts: &Options, devices: Option<Vec<String>>) -> Result<()> {
     let t = get_topology(&opts).context("Gettin topology")?;
 
     for sw in t.get_switches() {

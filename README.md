@@ -40,7 +40,6 @@ vdeplug4 ?
 
 # TODO
 
-imaginet rm -> Aggiungere un componente alla rete corrente.
 imaginet dump -> Dump della rete corrente in file di configurazione.
 imaginet clear -> Pulire la topologia corrente. (Fa anche stop).
 

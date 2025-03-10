@@ -46,6 +46,14 @@ impl Connection {
         &self.config
     }
 
+    pub fn get_a(&self) -> &String {
+        &self.a
+    }
+
+    pub fn get_b(&self) -> &String {
+        &self.b
+    }
+
     pub fn needs_config(&self) -> bool {
         !self.config.is_empty()
     }

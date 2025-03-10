@@ -53,6 +53,21 @@ enum Commands {
         config: String,
     },
 
+    #[command(about = "Execute a command in a device")]
+    Exec {
+        /// Name of the device in which to execute the command
+        device: String,
+
+        /// Command to execute with arguments
+        command: Vec<String>,
+    },
+
+    #[command(about = "Remove a device from the topology")]
+    Rm {
+        /// Name of the device
+        device: String,
+    },
+
     #[command(about = "Start a topology")]
     Start {
         /// List of device names to start
@@ -69,15 +84,6 @@ enum Commands {
     Stop {
         /// List of device names to stop
         devices: Option<Vec<String>>,
-    },
-
-    #[command(about = "Execute a command in a device")]
-    Exec {
-        /// Name of the device in which to execute the command
-        device: String,
-
-        /// Command to execute with arguments
-        command: Vec<String>,
     },
 }
 
@@ -232,7 +238,7 @@ fn main() -> Result<()> {
             Commands::Create { config } => topology_create(opts, config)?,
             Commands::Start { devices } => executor::topology_start(opts, devices)?,
             Commands::Status { devices } => executor::topology_status(opts, devices)?,
-            Commands::Stop { devices } => executor::topology_stop(opts, devices)?,
+            Commands::Stop { devices } => executor::topology_stop(&opts, devices)?,
             Commands::Attach { device, inline } => executor::topology_attach(opts, device, inline)?,
             Commands::Exec { device, command } => executor::topology_exec(opts, device, command)?,
             Commands::Add(d) => {
@@ -353,6 +359,14 @@ fn main() -> Result<()> {
                     }
                 }
 
+                executor::write_topology(opts.clone(), t).context("Writing topology")?;
+            }
+            Commands::Rm { device } => {
+                executor::topology_stop(&opts, Some(vec![device.clone()]))?;
+
+                let mut t = executor::get_topology(&opts).context("Getting topology")?;
+                t.remove_device(&device)
+                    .context("Removing device from topology")?;
                 executor::write_topology(opts.clone(), t).context("Writing topology")?;
             }
         },
