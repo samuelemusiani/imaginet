@@ -240,15 +240,11 @@ fn main() -> Result<()> {
                 let mut t = executor::get_topology(&opts).context("Getting topology")?;
                 match d {
                     AddSubcommands::Namespace { name, interfaces } => {
-                        println!("Adding namespace {}", name);
-                        println!("Interfaces: {:?}", interfaces);
-
                         // Interface parsing
                         let mut tmp: Vec<Vec<String>> = Vec::new();
 
                         if interfaces[0] != "--iface" {
-                            eprintln!("Interface definition must start with --iface");
-                            process::exit(1);
+                            anyhow::bail!("Interface definition must start with --iface");
                         }
 
                         for i in interfaces.iter() {
@@ -263,14 +259,11 @@ fn main() -> Result<()> {
 
                         for (n, i) in tmp.iter().enumerate() {
                             if i.len() < 2 || i.len() > 4 {
-                                eprintln!(
+                                anyhow::bail!(
                                     "Interface {n} definition must have between 2 and 4 elements"
                                 );
-                                process::exit(1);
                             }
                         }
-
-                        println!("Parsed interfaces: {:?}", tmp);
 
                         let mut real_interfaces: Vec<config::NSInterface> = Vec::new();
                         for i in tmp.iter() {
@@ -382,9 +375,7 @@ fn topology_create(opts: executor::Options, config: String) -> Result<()> {
 
     executor::write_topology(opts.clone(), t).context("Writing topology")?;
 
-    executor::topology_status(opts, None).context("Displaying topology status")?;
-
-    println!("{}", "--- Topology created ---\n".bold());
+    println!("Topology created");
 
     Ok(())
 }
