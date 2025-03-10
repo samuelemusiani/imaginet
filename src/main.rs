@@ -81,6 +81,9 @@ enum Commands {
     Status {
         /// List of device names to get status
         devices: Option<Vec<String>>,
+
+        #[arg(short, long, help = "Verbose")]
+        verbose: bool,
     },
 
     #[command(about = "Stop devices in the current topology")]
@@ -244,7 +247,9 @@ fn main() -> Result<()> {
                 executor::clear_topology(&opts)?;
             }
             Commands::Start { devices } => executor::topology_start(opts, devices)?,
-            Commands::Status { devices } => executor::topology_status(opts, devices)?,
+            Commands::Status { devices, verbose } => {
+                executor::topology_status(opts, devices, verbose)?
+            }
             Commands::Stop { devices } => executor::topology_stop(&opts, devices)?,
             Commands::Attach { device, inline } => executor::topology_attach(opts, device, inline)?,
             Commands::Exec { device, command } => executor::topology_exec(opts, device, command)?,

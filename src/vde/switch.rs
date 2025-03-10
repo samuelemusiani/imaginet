@@ -29,6 +29,14 @@ impl Switch {
         &self.name
     }
 
+    pub fn get_ports(&self) -> u32 {
+        self.ports
+    }
+
+    pub fn is_hub(&self) -> bool {
+        self.hub
+    }
+
     pub fn add_config(&mut self, config: String) {
         // Should check if the config is valid
         self.config.push(config);

@@ -255,10 +255,10 @@ pub fn write_topology(opts: Options, t: crate::vde::Topology) -> Result<()> {
 }
 
 /// If None is provided as devices, all devices are printed in the status
-pub fn topology_status(opts: Options, devices: Option<Vec<String>>) -> Result<()> {
+pub fn topology_status(opts: Options, devices: Option<Vec<String>>, verbose: bool) -> Result<()> {
     let t = get_topology(&opts).context("Gettin topology")?;
 
-    println!("{}", "--- Topology status ---".bold());
+    println!("{}", "Topology status".bold());
     println!("{}:", "Namespaces".bold());
     for n in t.get_namespaces() {
         if let Some(devices) = &devices {
@@ -268,10 +268,23 @@ pub fn topology_status(opts: Options, devices: Option<Vec<String>>) -> Result<()
         }
 
         let path = n.pid_path(&opts.working_dir);
-        if pid_path_is_alive(&path)? {
-            println!("- {} {}", n.get_name(), "alive".green());
+        let status = if pid_path_is_alive(&path)? {
+            "alive".green()
         } else {
-            println!("- {} {}", n.get_name(), "dead".red());
+            "dead".red()
+        };
+
+        println!("- {} {}", n.get_name(), status);
+        if verbose {
+            for i in n.get_interfaces() {
+                println!(
+                    "\t{} {} {} {}",
+                    i.get_name(),
+                    i.get_ip(),
+                    i.get_endpoint(),
+                    option_to_string(i.get_port())
+                );
+            }
         }
     }
 
@@ -285,10 +298,19 @@ pub fn topology_status(opts: Options, devices: Option<Vec<String>>) -> Result<()
         }
 
         let path = s.pid_path(&opts.working_dir);
-        if pid_path_is_alive(&path)? {
-            println!("- {} {}", s.get_name(), "alive".green());
+        let status = if pid_path_is_alive(&path)? {
+            "alive".green()
         } else {
-            println!("- {} {}", s.get_name(), "dead".red());
+            "dead".red()
+        };
+
+        println!("- {} {}", s.get_name(), status);
+        if verbose {
+            println!(
+                "\t{} {}",
+                s.get_ports(),
+                if s.is_hub() { "hub" } else { "" }
+            );
         }
     }
 
@@ -302,10 +324,23 @@ pub fn topology_status(opts: Options, devices: Option<Vec<String>>) -> Result<()
         }
 
         let path = conn.pid_path(&opts.working_dir);
-        if pid_path_is_alive(&path)? {
-            println!("- {} {}", conn.name, "alive".green());
+        let status = if pid_path_is_alive(&path)? {
+            "alive".green()
         } else {
-            println!("- {} {}", conn.name, "dead".red());
+            "dead".red()
+        };
+        println!("- {} {}", conn.name, status);
+        if verbose {
+            println!(
+                "\t{} {} -> {} {}",
+                conn.get_a(),
+                option_to_string(conn.get_port_a()),
+                conn.get_b(),
+                option_to_string(conn.get_port_b())
+            );
+            if conn.has_wirefilter() {
+                println!("\twirefilter");
+            }
         }
     }
 
@@ -536,4 +571,11 @@ pub fn topology_exec(opts: Options, device: String, command: Vec<String>) -> Res
 
 pub fn clear_topology(opts: &Options) -> Result<()> {
     fs::remove_dir_all(&opts.working_dir).context("Removing working directory")
+}
+
+fn option_to_string<T: ToString>(opt: Option<T>) -> String {
+    match opt {
+        Some(value) => value.to_string(),
+        None => String::from(""),
+    }
 }

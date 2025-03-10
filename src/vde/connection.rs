@@ -38,6 +38,10 @@ impl Connection {
         &self.name
     }
 
+    pub fn has_wirefilter(&self) -> bool {
+        self.wirefilter
+    }
+
     pub fn add_config(&mut self, config: String) {
         self.config.push(config);
     }
@@ -52,6 +56,14 @@ impl Connection {
 
     pub fn get_b(&self) -> &String {
         &self.b
+    }
+
+    pub fn get_port_a(&self) -> Option<u32> {
+        self.port_a
+    }
+
+    pub fn get_port_b(&self) -> Option<u32> {
+        self.port_b
     }
 
     pub fn needs_config(&self) -> bool {

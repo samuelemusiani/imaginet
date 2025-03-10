@@ -143,9 +143,9 @@ impl NSInterface {
         &self.endpoint
     }
 
-    //pub fn get_port(&self) -> Option<u32> {
-    //    self.port
-    //}
+    pub fn get_port(&self) -> Option<u32> {
+        self.port
+    }
 }
 
 #[cfg(test)]
