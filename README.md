@@ -40,12 +40,14 @@ vdeplug4 ?
 
 # TODO
 
-imaginet add -> Aggiungere un componente alla rete corrente.
 imaginet rm -> Aggiungere un componente alla rete corrente.
 imaginet dump -> Dump della rete corrente in file di configurazione.
 imaginet clear -> Pulire la topologia corrente. (Fa anche stop).
 
 Il comando stop dovrebbe chiudere dolcemente tutto senza killare il pid :)
+
+Status verboso per panoramica completa della topologia (far vedere le porte,
+le connessioni, la config?)
 
 Stop non controlla se la roba si ferma realmente.
 

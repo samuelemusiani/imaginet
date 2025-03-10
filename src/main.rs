@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use clap::Parser;
+use colored::Colorize;
 use env_logger;
 use home;
 use log;
@@ -100,7 +101,7 @@ enum AddSubcommands {
         name: String,
 
         #[arg(short, long, help = "Set number of ports for the switch")]
-        ports: Option<u16>,
+        ports: Option<u32>,
 
         #[arg(short = 'd', long, help = "Set the switch to be a hub")]
         hub: bool,
@@ -118,13 +119,13 @@ enum AddSubcommands {
         a: String,
 
         #[arg(long, help = "Port number on endpoint A", value_name = "PORT")]
-        port_a: Option<String>,
+        port_a: Option<u32>,
 
         /// Name of the second endpoint
         b: String,
 
         #[arg(long, help = "Port number on endpoint A", value_name = "PORT")]
-        port_b: Option<String>,
+        port_b: Option<u32>,
 
         #[arg(
             short,
@@ -235,65 +236,131 @@ fn main() -> Result<()> {
             Commands::Stop { devices } => executor::topology_stop(opts, devices)?,
             Commands::Attach { device, inline } => executor::topology_attach(opts, device, inline)?,
             Commands::Exec { device, command } => executor::topology_exec(opts, device, command)?,
-            Commands::Add(d) => match d {
-                AddSubcommands::Namespace { name, interfaces } => {
-                    println!("Adding namespace {}", name);
-                    println!("Interfaces: {:?}", interfaces);
+            Commands::Add(d) => {
+                let mut t = executor::get_topology(&opts).context("Getting topology")?;
+                match d {
+                    AddSubcommands::Namespace { name, interfaces } => {
+                        println!("Adding namespace {}", name);
+                        println!("Interfaces: {:?}", interfaces);
 
-                    // Interface parsing
-                    let mut tmp: Vec<Vec<String>> = Vec::new();
+                        // Interface parsing
+                        let mut tmp: Vec<Vec<String>> = Vec::new();
 
-                    if interfaces[0] != "--iface" {
-                        eprintln!("Interface definition must start with --iface");
-                        process::exit(1);
-                    }
-
-                    for i in interfaces.iter() {
-                        if i == "--iface" {
-                            tmp.push(Vec::new());
-                        } else {
-                            tmp.last_mut()
-                                .ok_or(anyhow::anyhow!("Empty vector"))?
-                                .push(i.clone());
-                        }
-                    }
-
-                    for (n, i) in tmp.iter().enumerate() {
-                        if i.len() < 2 || i.len() > 4 {
-                            eprintln!(
-                                "Interface {n} definition must have between 2 and 4 elements"
-                            );
+                        if interfaces[0] != "--iface" {
+                            eprintln!("Interface definition must start with --iface");
                             process::exit(1);
                         }
-                    }
 
-                    println!("Parsed interfaces: {:?}", tmp);
-
-                    let mut real_interfaces: Vec<config::NSInterface> = Vec::new();
-                    for i in tmp.iter() {
-                        let name = i[0].clone();
-                        let ip = i[1].clone();
-                        let endpoint = config::Endpoint {
-                            name: i[2].clone(),
-                            port: if i.len() == 4 {
-                                Some(i[3].clone().parse()?)
+                        for i in interfaces.iter() {
+                            if i == "--iface" {
+                                tmp.push(Vec::new());
                             } else {
-                                None
-                            },
-                        };
+                                tmp.last_mut()
+                                    .ok_or(anyhow::anyhow!("Empty vector"))?
+                                    .push(i.clone());
+                            }
+                        }
 
-                        let inter = config::NSInterface { name, ip, endpoint };
-                        inter
-                            .checks()
-                            .context(format!("Checking interface {}", i[0]))?;
-                        real_interfaces.push(inter);
+                        for (n, i) in tmp.iter().enumerate() {
+                            if i.len() < 2 || i.len() > 4 {
+                                eprintln!(
+                                    "Interface {n} definition must have between 2 and 4 elements"
+                                );
+                                process::exit(1);
+                            }
+                        }
+
+                        println!("Parsed interfaces: {:?}", tmp);
+
+                        let mut real_interfaces: Vec<config::NSInterface> = Vec::new();
+                        for i in tmp.iter() {
+                            let name = i[0].clone();
+                            let ip = i[1].clone();
+                            let endpoint = config::Endpoint {
+                                name: i[2].clone(),
+                                port: if i.len() == 4 {
+                                    Some(i[3].clone().parse()?)
+                                } else {
+                                    None
+                                },
+                            };
+
+                            let inter = config::NSInterface { name, ip, endpoint };
+                            inter
+                                .checks()
+                                .context(format!("Checking interface {}", i[0]))?;
+                            real_interfaces.push(inter);
+                        }
+
+                        let mut ns = vde::Namespace::new(name);
+                        for i in real_interfaces {
+                            let endp = vde::calculate_endpoint_type(&t, &i.endpoint.name);
+                            let ni = vde::NSInterface::new(
+                                i.name.clone(),
+                                i.ip.clone(),
+                                endp,
+                                i.endpoint.port,
+                            );
+                            ns.add_interface(ni);
+                        }
+
+                        t.add_namespace(ns);
                     }
+                    AddSubcommands::Switch {
+                        name,
+                        ports,
+                        hub,
+                        config,
+                    } => {
+                        let mut s = vde::Switch::new(name);
 
-                    // add_namespace_to_topology(opts, name, real_interfaces)?;
+                        if let Some(config) = config {
+                            let c = fs::read_to_string(config).context("Config file not found")?;
+                            c.lines().for_each(|l| s.add_config(l.to_owned()));
+                        }
+
+                        if let Some(ports) = ports {
+                            s.set_ports(ports);
+                        }
+
+                        if hub {
+                            s.set_hub(hub);
+                        }
+
+                        t.add_switch(s);
+                    }
+                    AddSubcommands::Connection {
+                        name,
+                        a,
+                        port_a,
+                        b,
+                        port_b,
+                        wirefilter,
+                        config,
+                    } => {
+                        let endp_a = vde::calculate_endpoint_type(&t, &a);
+                        let endp_b = vde::calculate_endpoint_type(&t, &b);
+                        let mut conn = vde::Connection::new(
+                            name,
+                            endp_a,
+                            port_a,
+                            endp_b,
+                            port_b,
+                            Some(wirefilter),
+                        );
+
+                        if let Some(config) = config {
+                            let conf =
+                                fs::read_to_string(config).context("Config file not found")?;
+                            conf.lines().for_each(|l| conn.add_config(l.to_owned()));
+                        }
+
+                        t.add_connection(conn);
+                    }
                 }
-                AddSubcommands::Switch { .. } => todo!("Add switch"),
-                AddSubcommands::Connection { .. } => todo!("Add connection"),
-            },
+
+                executor::write_topology(opts.clone(), t).context("Writing topology")?;
+            }
         },
         None => {
             eprintln!("No command provided");
@@ -309,16 +376,18 @@ fn topology_create(opts: executor::Options, config: String) -> Result<()> {
 
     let c = config::Config::from_string(&file).context("Parsing config")?;
 
-    let t = config_to_vde_topology(c);
+    let t = config_to_vde_topology(c).context("Converting config to vde topology")?;
 
     executor::write_topology(opts.clone(), t).context("Writing topology")?;
 
     executor::topology_status(opts, None).context("Displaying topology status")?;
 
+    println!("{}", "--- Topology created ---\n".bold());
+
     Ok(())
 }
 
-fn config_to_vde_topology(c: config::Config) -> vde::Topology {
+fn config_to_vde_topology(c: config::Config) -> Result<vde::Topology> {
     let mut t = vde::Topology::new();
 
     if let Some(sws) = &c.switch {
@@ -326,7 +395,7 @@ fn config_to_vde_topology(c: config::Config) -> vde::Topology {
             let mut s = vde::Switch::new(sw.name.clone());
 
             if let Some(config) = &sw.config {
-                let c = fs::read_to_string(config).expect("Config file not found");
+                let c = fs::read_to_string(config).context("Config file not found")?;
                 c.lines().for_each(|l| s.add_config(l.to_owned()));
             }
 
@@ -373,7 +442,7 @@ fn config_to_vde_topology(c: config::Config) -> vde::Topology {
                 vde::Connection::new(c.name.clone(), endp_a, port_a, endp_b, port_b, c.wirefilter);
 
             if let Some(config) = &c.config {
-                let conf = fs::read_to_string(config).expect("Config file not found");
+                let conf = fs::read_to_string(config).context("Config file not found")?;
                 conf.lines().for_each(|l| conn.add_config(l.to_owned()));
             }
 
@@ -381,7 +450,7 @@ fn config_to_vde_topology(c: config::Config) -> vde::Topology {
         }
     }
 
-    return t;
+    return Ok(t);
 }
 
 fn parse_config_file(file: &str) -> Result<Config> {
