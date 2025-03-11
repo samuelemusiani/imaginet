@@ -32,6 +32,11 @@ pub fn get_topology(opts: &Options) -> Result<crate::vde::Topology> {
     Ok(t)
 }
 
+pub fn topology_exists(opts: &Options) -> bool {
+    let path = format!("{}/topology", opts.working_dir);
+    fs::metadata(&path).is_ok()
+}
+
 /// If None is provided as devices, all devices are started
 pub fn topology_start(opts: Options, devices: Option<Vec<String>>) -> Result<()> {
     let t = get_topology(&opts).context("Gettin topology")?;

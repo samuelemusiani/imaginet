@@ -51,6 +51,13 @@ enum Commands {
     Create {
         /// Path to configuration file. If not provided, an empty topology is created
         config: Option<String>,
+
+        #[arg(
+            short,
+            long,
+            help = "Force the creation of a new topology, deleting the current one"
+        )]
+        force: bool,
     },
 
     #[command(about = "Stop and delete the current topology")]
@@ -241,7 +248,7 @@ fn main() -> Result<()> {
 
     match args.command {
         Some(command) => match command {
-            Commands::Create { config } => topology_create(opts, config)?,
+            Commands::Create { config, force } => topology_create(opts, config, force)?,
             Commands::Clear {} => {
                 executor::topology_stop(&opts, None)?;
                 executor::clear_topology(&opts)?;
@@ -391,7 +398,17 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn topology_create(opts: executor::Options, config: Option<String>) -> Result<()> {
+fn topology_create(opts: executor::Options, config: Option<String>, force: bool) -> Result<()> {
+    if executor::topology_exists(&opts) {
+        if !force {
+            println!("Topology already exists. Use --force to overwrite or the clear command");
+            return Err(anyhow::anyhow!("Topology already exists"));
+        } else {
+            executor::topology_stop(&opts, None)?;
+            executor::clear_topology(&opts)?;
+        }
+    }
+
     let t;
     if let Some(config) = config {
         let file = fs::read_to_string(config).context("Reading config file")?;
