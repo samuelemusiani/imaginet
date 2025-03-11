@@ -47,7 +47,7 @@ enum Commands {
         device: String,
     },
 
-    #[command(about = "Create a topology")]
+    #[command(about = "Create a topology from a yaml configuration")]
     Create {
         /// Path to configuration file. If not provided, an empty topology is created
         config: Option<String>,
@@ -63,6 +63,9 @@ enum Commands {
     #[command(about = "Stop and delete the current topology")]
     Clear {},
 
+    #[command(about = "Dump current raw configuration")]
+    Dump {},
+
     #[command(about = "Execute a command in a device")]
     Exec {
         /// Name of the device in which to execute the command
@@ -70,6 +73,19 @@ enum Commands {
 
         /// Command to execute with arguments
         command: Vec<String>,
+    },
+
+    #[command(about = "Import a topology from a raw configuration file (generated with dump)")]
+    Import {
+        /// Path to the topology file
+        config: String,
+
+        #[arg(
+            short,
+            long,
+            help = "Force the import of a new topology, deleting the current one"
+        )]
+        force: bool,
     },
 
     #[command(about = "Remove a device from the topology")]
@@ -253,6 +269,14 @@ fn main() -> Result<()> {
                 executor::topology_stop(&opts, None)?;
                 executor::clear_topology(&opts)?;
             }
+            Commands::Dump {} => {
+                let t = executor::get_topology(&opts).context("Getting topology")?;
+                print!(
+                    "{}",
+                    t.to_string().context("Converting topology to string")?
+                );
+            }
+            Commands::Import { config, force } => topology_import(opts, config, force)?,
             Commands::Start { devices } => executor::topology_start(opts, devices)?,
             Commands::Status { devices, verbose } => {
                 executor::topology_status(opts, devices, verbose)?
@@ -425,6 +449,23 @@ fn topology_create(opts: executor::Options, config: Option<String>, force: bool)
     println!("Topology created");
 
     Ok(())
+}
+
+fn topology_import(opts: executor::Options, config: String, force: bool) -> Result<()> {
+    if executor::topology_exists(&opts) {
+        if !force {
+            println!("Topology already exists. Use --force to overwrite or the clear command");
+            return Err(anyhow::anyhow!("Topology already exists"));
+        } else {
+            executor::topology_stop(&opts, None)?;
+            executor::clear_topology(&opts)?;
+        }
+    }
+
+    let file = fs::read_to_string(config).context("Reading config file")?;
+    executor::write_raw_topology(opts, file).context("Writing topology to file")?;
+
+    return Ok(());
 }
 
 fn config_to_vde_topology(c: config::Config) -> Result<vde::Topology> {

@@ -40,8 +40,6 @@ vdeplug4 ?
 
 # TODO
 
-imaginet dump -> Dump della rete corrente in file di configurazione.
-
 Il comando stop dovrebbe chiudere dolcemente tutto senza killare il pid :)
 
 Stop non controlla se la roba si ferma realmente.

@@ -251,7 +251,15 @@ fn exec_inline(cmd: &str, args: &Vec<String>) -> Result<()> {
 
 pub fn write_topology(opts: Options, t: crate::vde::Topology) -> Result<()> {
     init(&opts).context("Initializing executor")?;
-    let t = t.to_string().context("Converting topology to string")?;
+
+    write_raw_topology(
+        opts.clone(),
+        t.to_string().context("Converting topology to string")?,
+    )
+}
+
+pub fn write_raw_topology(opts: Options, t: String) -> Result<()> {
+    init(&opts).context("Initializing executor")?;
 
     let path = &format!("{}/topology", &opts.working_dir);
     fs::write(&path, t).context(format!("Writing topology on file {path}"))?;
