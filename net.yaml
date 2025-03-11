@@ -1,9 +1,9 @@
 switch:
   - name: sw1
-    # config: ./sw1.conf
+    config: ./sw1.conf
     # Default to 32 ports
-    #ports: 2
-    # hub: true
+    ports: 48
+    hub: true
 
   - name: sw2
 

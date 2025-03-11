@@ -82,8 +82,8 @@ enum Commands {
         /// List of device names to get status
         devices: Option<Vec<String>>,
 
-        #[arg(short, long, help = "Verbose")]
-        verbose: bool,
+        #[arg(short, long, action = clap::ArgAction::Count, help = "Verbosity level. Can be used multiple times for increased verbosity")]
+        verbose: u8,
     },
 
     #[command(about = "Stop devices in the current topology")]

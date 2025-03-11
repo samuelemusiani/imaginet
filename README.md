@@ -44,9 +44,6 @@ imaginet dump -> Dump della rete corrente in file di configurazione.
 
 Il comando stop dovrebbe chiudere dolcemente tutto senza killare il pid :)
 
-Status verboso per panoramica completa della topologia (far vedere le porte,
-le connessioni, la config?)
-
 Stop non controlla se la roba si ferma realmente.
 
 Aggiungere quello che manca: router, vdeplug vari ed eventuali

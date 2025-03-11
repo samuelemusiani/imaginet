@@ -255,7 +255,7 @@ pub fn write_topology(opts: Options, t: crate::vde::Topology) -> Result<()> {
 }
 
 /// If None is provided as devices, all devices are printed in the status
-pub fn topology_status(opts: Options, devices: Option<Vec<String>>, verbose: bool) -> Result<()> {
+pub fn topology_status(opts: Options, devices: Option<Vec<String>>, verbose: u8) -> Result<()> {
     let t = get_topology(&opts).context("Gettin topology")?;
 
     println!("{}", "Topology status".bold());
@@ -275,14 +275,14 @@ pub fn topology_status(opts: Options, devices: Option<Vec<String>>, verbose: boo
         };
 
         println!("- {} {}", n.get_name(), status);
-        if verbose {
+        if verbose > 0 {
             for i in n.get_interfaces() {
                 println!(
-                    "\t{} {} {} {}",
-                    i.get_name(),
-                    i.get_ip(),
-                    i.get_endpoint(),
-                    option_to_string(i.get_port())
+                    "\tinterface: {}\n\tip: {}\n\tendpoint: {} {}",
+                    i.get_name().bold(),
+                    i.get_ip().bold(),
+                    i.get_endpoint().bold(),
+                    option_to_string(i.get_port()).bold()
                 );
             }
         }
@@ -305,12 +305,19 @@ pub fn topology_status(opts: Options, devices: Option<Vec<String>>, verbose: boo
         };
 
         println!("- {} {}", s.get_name(), status);
-        if verbose {
+        if verbose > 0 {
             println!(
-                "\t{} {}",
-                s.get_ports(),
-                if s.is_hub() { "hub" } else { "" }
+                "\tports: {}\n\thub: {}",
+                s.get_ports().to_string().bold(),
+                s.is_hub().to_string().bold()
             );
+        }
+
+        if verbose > 1 {
+            println!("\tconfig:");
+            for l in s.get_config() {
+                println!("\t  {}", l.bold());
+            }
         }
     }
 
@@ -330,16 +337,21 @@ pub fn topology_status(opts: Options, devices: Option<Vec<String>>, verbose: boo
             "dead".red()
         };
         println!("- {} {}", conn.name, status);
-        if verbose {
+        if verbose > 0 {
             println!(
-                "\t{} {} -> {} {}",
-                conn.get_a(),
-                option_to_string(conn.get_port_a()),
-                conn.get_b(),
-                option_to_string(conn.get_port_b())
+                "\tendpoint_a: {} {}\n\tendpoint_b: {} {}\n\twirefilter: {}",
+                conn.get_a().bold(),
+                option_to_string(conn.get_port_a()).bold(),
+                conn.get_b().bold(),
+                option_to_string(conn.get_port_b()).bold(),
+                conn.has_wirefilter().to_string().bold()
             );
-            if conn.has_wirefilter() {
-                println!("\twirefilter");
+        }
+
+        if verbose > 1 {
+            println!("\tconfig:");
+            for l in conn.get_config() {
+                println!("\t  {}", l.bold());
             }
         }
     }
