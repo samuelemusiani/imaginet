@@ -23,8 +23,8 @@ struct Args {
     )]
     pub terminal: Option<String>,
 
-    #[arg(short, long, help = "Path to configuration file")]
-    pub conifg: Option<String>,
+    #[arg(short, long, help = "Path to global configuration file")]
+    pub config: Option<String>,
 
     #[command(subcommand)]
     pub command: Option<Commands>,
@@ -218,7 +218,7 @@ fn main() -> Result<()> {
         .format_timestamp(None)
         .init();
 
-    let conf = if let Some(config) = args.conifg {
+    let conf = if let Some(config) = args.config {
         parse_config_file(&config)
     } else {
         let home = home::home_dir().context("Getting home directory")?;
