@@ -135,3 +135,7 @@ Ci sono plugin come vlan e agno che ha senso farli nested. Devo valutare questa 
 Ci sono alcune cose che mancano di vde2 (i router, autolink?, ecc). Non so se ha
 senso aggiungerle
 
+### vdeplug: hub, multi, bundling, switch 
+Su libvdeplug_netnode.c c'è la possibilità di fare hub, switch, multi (?) e bunding (?).
+Sono tutti unmanaged, ma si potrebbe integrarli
+
