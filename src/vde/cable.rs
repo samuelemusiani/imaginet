@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Connection {
+pub struct Cable {
     pub name: String,
     pub a: String,
     pub port_a: Option<u32>,
@@ -14,7 +14,7 @@ pub struct Connection {
     pub config: Vec<String>,
 }
 
-impl Connection {
+impl Cable {
     pub fn new(
         name: String,
         a: String,
@@ -22,8 +22,8 @@ impl Connection {
         b: String,
         port_b: Option<u32>,
         wirefilter: Option<bool>,
-    ) -> Connection {
-        Connection {
+    ) -> Cable {
+        Cable {
             name,
             a,
             port_a,
@@ -89,7 +89,7 @@ impl Connection {
     pub fn mgmt_path(&self, base: &str) -> Result<String> {
         if !self.wirefilter {
             return Err(anyhow::anyhow!(
-                "No wirefilter connection. Can't have a management file"
+                "No wirefilter cable. Can't have a management file"
             ));
         }
         Ok(PathBuf::from(self.base_path(base))
@@ -163,7 +163,7 @@ impl Connection {
             Ok(String::from("vdeterm"))
         } else {
             Err(anyhow::anyhow!(
-                "Simple connections (no wirefilter) can't be attached"
+                "Simple cable (no wirefilter) can't be attached"
             ))
         }
     }
@@ -174,7 +174,7 @@ impl Connection {
             Ok(vec![socke_p])
         } else {
             Err(anyhow::anyhow!(
-                "Simple connections (no wirefilter) can't be attached"
+                "Simple cable (no wirefilter) can't be attached"
             ))
         }
     }
@@ -187,7 +187,7 @@ impl Connection {
             Ok(String::from("vdecmd"))
         } else {
             Err(anyhow::anyhow!(
-                "Simple connections (no wirefilter) can't be attached"
+                "Simple cable (no wirefilter) can't be attached"
             ))
         }
     }
@@ -199,7 +199,7 @@ impl Connection {
     pub fn exec_command_args(&self, base: &str, command: &mut Vec<String>) -> Result<Vec<String>> {
         if !self.wirefilter {
             return Err(anyhow::anyhow!(
-                "Simple connections (no wirefilter) can't be attached"
+                "Simple cable (no wirefilter) can't be attached"
             ));
         }
 

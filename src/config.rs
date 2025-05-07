@@ -34,7 +34,7 @@ pub struct NSInterface {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Connection {
+pub struct Cable {
     pub name: String,
     pub endpoint_a: Endpoint,
     pub endpoint_b: Endpoint,
@@ -46,7 +46,7 @@ pub struct Connection {
 pub struct Config {
     pub switch: Option<Vec<Switch>>,
     pub namespace: Option<Vec<Namespace>>,
-    pub connections: Option<Vec<Connection>>,
+    pub cables: Option<Vec<Cable>>,
 }
 
 impl Config {
@@ -85,14 +85,14 @@ impl Config {
             }
         }
 
-        if let Some(con) = &self.connections {
+        if let Some(con) = &self.cables {
             for c in con {
                 if !set.insert(&c.name) {
-                    anyhow::bail!("Connection name {} is not unique", c.name);
+                    anyhow::bail!("Cable name {} is not unique", c.name);
                 }
 
                 c.checks()
-                    .context(format!("Checks failed for connection {}", c.name))?;
+                    .context(format!("Checks failed for cable {}", c.name))?;
             }
         }
 
@@ -161,16 +161,12 @@ impl Config {
             }
         }
 
-        if let Some(con) = &self.connections {
+        if let Some(con) = &self.cables {
             for c in con {
-                endpoint_check(c.endpoint_a.name.clone(), c.endpoint_a.port).context(format!(
-                    "Checks failed for connection {} endpoint A",
-                    c.name
-                ))?;
-                endpoint_check(c.endpoint_b.name.clone(), c.endpoint_b.port).context(format!(
-                    "Checks failed for connection {} endpoint B",
-                    c.name
-                ))?;
+                endpoint_check(c.endpoint_a.name.clone(), c.endpoint_a.port)
+                    .context(format!("Checks failed for cable {} endpoint A", c.name))?;
+                endpoint_check(c.endpoint_b.name.clone(), c.endpoint_b.port)
+                    .context(format!("Checks failed for cable {} endpoint B", c.name))?;
 
                 *used_map.entry(&c.endpoint_a.name).or_default() += 1;
                 *used_map.entry(&c.endpoint_b.name).or_default() += 1;
@@ -246,11 +242,11 @@ impl NSInterface {
     }
 }
 
-impl Connection {
+impl Cable {
     fn checks(&self) -> Result<()> {
         if let Some(c) = &self.config {
             if !self.wirefilter.unwrap_or(false) {
-                anyhow::bail!("Connection has a config file but it's not a wirefilter cable",);
+                anyhow::bail!("Cable has a config file but it's not a wirefilter cable",);
             }
 
             let _ = std::fs::read_to_string(c).context(format!("Reading config file {}", c))?;

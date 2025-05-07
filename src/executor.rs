@@ -75,7 +75,7 @@ pub fn topology_start(opts: Options, devices: Option<Vec<String>>) -> Result<()>
         configure_namespace(&opts, ns)?;
     }
 
-    for conn in t.get_connections() {
+    for conn in t.get_cables() {
         if let Some(devices) = &devices {
             if !devices.contains(&conn.name) {
                 continue;
@@ -84,7 +84,7 @@ pub fn topology_start(opts: Options, devices: Option<Vec<String>>) -> Result<()>
 
         init_dir(conn.base_path(&opts.working_dir))
             .context(format!("Initializing base dir for {}", conn.name))?;
-        configure_connection(&opts, conn)?;
+        configure_cable(&opts, conn)?;
     }
 
     Ok(())
@@ -179,7 +179,7 @@ fn configure_namespace(opts: &Options, ns: &crate::vde::Namespace) -> Result<()>
     Ok(())
 }
 
-fn configure_connection(opts: &Options, conn: &crate::vde::Connection) -> Result<()> {
+fn configure_cable(opts: &Options, conn: &crate::vde::Cable) -> Result<()> {
     let cmd = conn.exec_command();
     let args = conn.exec_args(&opts.working_dir);
 
@@ -190,7 +190,7 @@ fn configure_connection(opts: &Options, conn: &crate::vde::Connection) -> Result
             .context(format!("Writing config file for {}", conn.name))?;
     }
 
-    exec(&cmd, &args).context(format!("Starting connection {}", conn.name))
+    exec(&cmd, &args).context(format!("Starting cable {}", conn.name))
 }
 
 fn init(opts: &Options) -> Result<()> {
@@ -334,9 +334,9 @@ pub fn topology_status(opts: Options, devices: Option<Vec<String>>, verbose: u8)
         }
     }
 
-    println!("\n{}:", "Connections".bold());
+    println!("\n{}:", "Cables".bold());
 
-    for conn in t.get_connections() {
+    for conn in t.get_cables() {
         if let Some(devices) = &devices {
             if !devices.contains(&conn.name) {
                 continue;
@@ -427,7 +427,7 @@ pub fn topology_stop(opts: &Options, devices: Option<Vec<String>>) -> Result<()>
         }
     }
 
-    for conn in t.get_connections() {
+    for conn in t.get_cables() {
         if let Some(devices) = &devices {
             if !devices.contains(&conn.name) {
                 continue;
@@ -505,12 +505,12 @@ pub fn topology_attach(opts: Options, device: String, inline: bool) -> Result<()
         return Ok(());
     }
 
-    for conn in t.get_connections() {
+    for conn in t.get_cables() {
         if conn.name != device {
             continue;
         }
 
-        log::trace!("Attaching to connection {}", conn.name);
+        log::trace!("Attaching to cable {}", conn.name);
 
         let path = conn.pid_path(&opts.working_dir);
         if !pid_path_is_alive(&path)? {
@@ -574,7 +574,7 @@ pub fn topology_exec(opts: Options, device: String, command: Vec<String>) -> Res
         return Ok(());
     }
 
-    for conn in t.get_connections() {
+    for conn in t.get_cables() {
         if conn.name != device {
             continue;
         }
@@ -587,7 +587,7 @@ pub fn topology_exec(opts: Options, device: String, command: Vec<String>) -> Res
         let cmd = conn.exec_command_command()?;
         let args = conn.exec_command_args(&opts.working_dir, command.as_mut())?;
 
-        exec_inline(&cmd, &args).context("Executing command inside connection")?;
+        exec_inline(&cmd, &args).context("Executing command inside cable")?;
         return Ok(());
     }
 

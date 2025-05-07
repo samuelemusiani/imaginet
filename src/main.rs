@@ -144,9 +144,9 @@ enum AddSubcommands {
         config: Option<String>,
     },
 
-    #[command(about = "Add a connection to the current topology")]
-    Connection {
-        /// Name of the connection. Must be unique in all the topology
+    #[command(about = "Add a cable to the current topology")]
+    Cable {
+        /// Name of the cable. Must be unique in all the topology
         name: String,
 
         /// Name of the first endpoint
@@ -161,12 +161,7 @@ enum AddSubcommands {
         #[arg(long, help = "Port number on endpoint A", value_name = "PORT")]
         port_b: Option<u32>,
 
-        #[arg(
-            short,
-            long,
-            help = "Make the connection with wirefilter",
-            group = "wr"
-        )]
+        #[arg(short, long, help = "Make the cable with wirefilter", group = "wr")]
         wirefilter: bool,
 
         #[arg(
@@ -371,7 +366,7 @@ fn main() -> Result<()> {
 
                         t.add_switch(s).context("Adding switch to topology")?;
                     }
-                    AddSubcommands::Connection {
+                    AddSubcommands::Cable {
                         name,
                         a,
                         port_a,
@@ -382,14 +377,8 @@ fn main() -> Result<()> {
                     } => {
                         let endp_a = vde::calculate_endpoint_type(&t, &a);
                         let endp_b = vde::calculate_endpoint_type(&t, &b);
-                        let mut conn = vde::Connection::new(
-                            name,
-                            endp_a,
-                            port_a,
-                            endp_b,
-                            port_b,
-                            Some(wirefilter),
-                        );
+                        let mut conn =
+                            vde::Cable::new(name, endp_a, port_a, endp_b, port_b, Some(wirefilter));
 
                         if let Some(config) = config {
                             let conf =
@@ -397,8 +386,7 @@ fn main() -> Result<()> {
                             conf.lines().for_each(|l| conn.add_config(l.to_owned()));
                         }
 
-                        t.add_connection(conn)
-                            .context("Adding connection to topology")?;
+                        t.add_cable(conn).context("Adding cable to topology")?;
                     }
                 }
 
@@ -513,22 +501,21 @@ fn config_to_vde_topology(c: config::Config) -> Result<vde::Topology> {
         }
     }
 
-    if let Some(conns) = &c.connections {
+    if let Some(conns) = &c.cables {
         for c in conns {
             let endp_a = vde::calculate_endpoint_type(&t, &c.endpoint_a.name);
             let port_a = c.endpoint_a.port;
             let endp_b = vde::calculate_endpoint_type(&t, &c.endpoint_b.name);
             let port_b = c.endpoint_b.port;
             let mut conn =
-                vde::Connection::new(c.name.clone(), endp_a, port_a, endp_b, port_b, c.wirefilter);
+                vde::Cable::new(c.name.clone(), endp_a, port_a, endp_b, port_b, c.wirefilter);
 
             if let Some(config) = &c.config {
                 let conf = fs::read_to_string(config).context("Config file not found")?;
                 conf.lines().for_each(|l| conn.add_config(l.to_owned()));
             }
 
-            t.add_connection(conn)
-                .context("Adding connection to topology")?;
+            t.add_cable(conn).context("Adding cable to topology")?;
         }
     }
 

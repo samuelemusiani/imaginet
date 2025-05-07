@@ -1,10 +1,10 @@
 use anyhow::{Context, Result};
-pub use connection::Connection;
+pub use cable::Cable;
 pub use namespace::{NSInterface, Namespace};
 use serde::{Deserialize, Serialize};
 pub use switch::Switch;
 
-mod connection;
+mod cable;
 mod namespace;
 mod switch;
 
@@ -18,7 +18,7 @@ const SOCK_FILE_NAME: &str = "sock";
 pub struct Topology {
     switches: Vec<Switch>,
     namespaces: Vec<Namespace>,
-    connections: Vec<Connection>,
+    cables: Vec<Cable>,
 }
 
 impl Topology {
@@ -26,7 +26,7 @@ impl Topology {
         Topology {
             switches: Vec::new(),
             namespaces: Vec::new(),
-            connections: Vec::new(),
+            cables: Vec::new(),
         }
     }
 
@@ -43,7 +43,7 @@ impl Topology {
             }
         }
 
-        for con in &self.connections {
+        for con in &self.cables {
             if con.get_name() == name {
                 return true;
             }
@@ -70,11 +70,11 @@ impl Topology {
         Ok(())
     }
 
-    pub fn add_connection(&mut self, c: Connection) -> Result<()> {
+    pub fn add_cable(&mut self, c: Cable) -> Result<()> {
         if self.is_name_used(c.get_name()) {
             anyhow::bail!("Name already used");
         }
-        self.connections.push(c);
+        self.cables.push(c);
 
         Ok(())
     }
@@ -87,8 +87,8 @@ impl Topology {
         &self.namespaces
     }
 
-    pub fn get_connections(&self) -> &Vec<Connection> {
-        &self.connections
+    pub fn get_cables(&self) -> &Vec<Cable> {
+        &self.cables
     }
 
     pub fn remove_device(&mut self, name: &String) -> Result<()> {
@@ -104,8 +104,8 @@ impl Topology {
             return Ok(());
         };
 
-        if let Some(pos) = self.connections.iter().position(|x| x.get_name() == name) {
-            self.connections.remove(pos);
+        if let Some(pos) = self.cables.iter().position(|x| x.get_name() == name) {
+            self.cables.remove(pos);
             return Ok(());
         };
 
@@ -116,11 +116,11 @@ impl Topology {
         dbg!("check_dependency");
         dbg!(name);
 
-        for con in &self.connections {
+        for con in &self.cables {
             let eqa = con.get_a().split('/').any(|x| x == name);
             let eqb = con.get_b().split('/').any(|x| x == name);
             if eqa || eqb {
-                anyhow::bail!("Device {} is connected to a connection", name);
+                anyhow::bail!("Device {} is connected to a cable", name);
             }
         }
 
