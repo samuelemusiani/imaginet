@@ -1,5 +1,6 @@
-use anyhow::{Context, Result};
+use anyhow::{Context, Ok, Result};
 pub use cable::Cable;
+use core::fmt;
 pub use namespace::{NSInterface, Namespace};
 use serde::{Deserialize, Serialize};
 pub use switch::Switch;
@@ -11,6 +12,18 @@ mod switch;
 const PID_FILE_NAME: &str = "pid";
 const MGMT_FILE_NAME: &str = "mgmt";
 const SOCK_FILE_NAME: &str = "sock";
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub enum VdeConnProtocols {
+    VDE,
+    PTP,
+}
+
+impl fmt::Display for VdeConnProtocols {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
 
 /// A vde topology is a struct that contains all the necessary
 /// information to create a network topology based on VDE
@@ -117,8 +130,8 @@ impl Topology {
         dbg!(name);
 
         for con in &self.cables {
-            let eqa = con.get_a().split('/').any(|x| x == name);
-            let eqb = con.get_b().split('/').any(|x| x == name);
+            let eqa = con.get_a().get_name().split('/').any(|x| x == name);
+            let eqb = con.get_b().get_name().split('/').any(|x| x == name);
             if eqa || eqb {
                 anyhow::bail!("Device {} is connected to a cable", name);
             }
@@ -152,6 +165,22 @@ pub fn find_endpoint_path(t: &Topology, name: &str, port: Option<&String>) -> Re
     for ns in t.get_namespaces() {
         if ns.get_name() == name {
             return ns.conn_path(".", port);
+        }
+    }
+
+    panic!("Endpoint not found");
+}
+
+pub fn find_endpoint_protocol(t: &Topology, name: &str) -> Result<VdeConnProtocols> {
+    for sw in t.get_switches() {
+        if sw.get_name() == name {
+            return Ok(VdeConnProtocols::VDE);
+        }
+    }
+
+    for ns in t.get_namespaces() {
+        if ns.get_name() == name {
+            return Ok(VdeConnProtocols::PTP);
         }
     }
 

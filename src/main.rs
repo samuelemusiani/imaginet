@@ -367,8 +367,25 @@ fn main() -> Result<()> {
                         let endp_b = vde::find_endpoint_path(&t, &b, port_b.as_ref()).context(
                             format!("Finding endpoint path for {} on connection {}", &b, &name),
                         )?;
-                        let mut conn =
-                            vde::Cable::new(name, endp_a, port_a, endp_b, port_b, Some(wirefilter));
+
+                        let endp_a_prt = vde::find_endpoint_protocol(&t, &a).context(format!(
+                            "Finding endpoint protocol for {} on connection {}",
+                            &a, &name
+                        ))?;
+                        let endp_b_prt = vde::find_endpoint_protocol(&t, &b).context(format!(
+                            "Finding endpoint protocol for {} on connection {}",
+                            &b, &name
+                        ))?;
+                        let mut conn = vde::Cable::new(
+                            name,
+                            endp_a,
+                            port_a,
+                            endp_a_prt,
+                            endp_b,
+                            port_b,
+                            endp_b_prt,
+                            Some(wirefilter),
+                        );
 
                         if let Some(config) = config {
                             let conf =
@@ -504,8 +521,27 @@ fn config_to_vde_topology(c: config::Config) -> Result<vde::Topology> {
                         &c.endpoint_b.name, &c.name
                     ))?;
             let port_b = c.endpoint_b.port.clone();
-            let mut conn =
-                vde::Cable::new(c.name.clone(), endp_a, port_a, endp_b, port_b, c.wirefilter);
+
+            let endp_a_prt =
+                vde::find_endpoint_protocol(&t, &c.endpoint_a.name).context(format!(
+                    "Finding endpoint protocol for {} on connection {}",
+                    &c.endpoint_a.name, &c.name
+                ))?;
+            let endp_b_prt =
+                vde::find_endpoint_protocol(&t, &c.endpoint_b.name).context(format!(
+                    "Finding endpoint protocol for {} on connection {}",
+                    &c.endpoint_b.name, &c.name
+                ))?;
+            let mut conn = vde::Cable::new(
+                c.name.clone(),
+                endp_a,
+                port_a,
+                endp_a_prt,
+                endp_b,
+                port_b,
+                endp_b_prt,
+                c.wirefilter,
+            );
 
             if let Some(config) = &c.config {
                 let conf = fs::read_to_string(config).context("Config file not found")?;

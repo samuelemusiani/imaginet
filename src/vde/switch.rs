@@ -25,7 +25,7 @@ impl Switch {
         }
     }
 
-    pub fn get_name(&self) -> &str {
+    pub fn get_name(&self) -> &String {
         &self.name
     }
 

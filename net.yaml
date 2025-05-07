@@ -78,5 +78,5 @@ cable:
     endpoint_b:
       name: sw1
       port: "2"
-    #wirefilter: true
+    wirefilter: true
     #config: ./conn1.conf

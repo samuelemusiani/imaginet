@@ -6,7 +6,7 @@ use std::{fs, process, thread};
 
 const ERR_DEAD_DEVICE: &str = "Device not alive";
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Options {
     pub terminal: String,
     pub terminal_args: Vec<String>,
@@ -39,13 +39,17 @@ pub fn topology_exists(opts: &Options) -> bool {
 
 /// If None is provided as devices, all devices are started
 pub fn topology_start(opts: Options, devices: Option<Vec<String>>) -> Result<()> {
+    log::debug!("Starting the topology");
+    log::debug!("opts: {:?} devices: {:?}", opts, devices);
     let t = get_topology(&opts).context("Gettin topology")?;
 
+    let devices = devices.unwrap_or(vec![]);
+
+    log::trace!("Starting switches");
     for sw in t.get_switches() {
-        if let Some(devices) = &devices {
-            if !devices.contains(&sw.get_name().to_owned()) {
-                continue;
-            }
+        if !devices.is_empty() && !devices.contains(&sw.get_name()) {
+            log::trace!("Skipping switch {}", sw.get_name());
+            continue;
         }
 
         start_switch(&opts, sw)?;
@@ -64,27 +68,27 @@ pub fn topology_start(opts: Options, devices: Option<Vec<String>>) -> Result<()>
     drop(file);
 
     let script_path = script_path.to_str().unwrap().to_owned();
+    log::trace!("Starting namespaces");
     for ns in t.get_namespaces() {
-        if let Some(devices) = &devices {
-            if !devices.contains(&ns.get_name().to_owned()) {
-                continue;
-            }
+        if !devices.is_empty() && !devices.contains(&ns.get_name()) {
+            log::trace!("Skipping namespace {}", ns.get_name());
+            continue;
         }
 
         start_namespace(&opts, ns, &script_path)?;
         configure_namespace(&opts, ns)?;
     }
 
+    log::trace!("Starting cables");
     for conn in t.get_cables() {
-        if let Some(devices) = &devices {
-            if !devices.contains(&conn.name) {
-                continue;
-            }
+        if !devices.is_empty() && !devices.contains(&conn.name) {
+            log::trace!("Skipping cable {}", conn.name);
+            continue;
         }
 
         init_dir(conn.base_path(&opts.working_dir))
             .context(format!("Initializing base dir for {}", conn.name))?;
-        configure_cable(&opts, conn)?;
+        start_cable(&opts, conn)?;
     }
 
     Ok(())
@@ -181,17 +185,20 @@ fn configure_namespace(opts: &Options, ns: &crate::vde::Namespace) -> Result<()>
     Ok(())
 }
 
-fn configure_cable(opts: &Options, conn: &crate::vde::Cable) -> Result<()> {
+fn start_cable(opts: &Options, conn: &crate::vde::Cable) -> Result<()> {
+    log::trace!("Starting cable {}", conn.get_name());
     let cmd = conn.exec_command();
     let args = conn.exec_args(&opts.working_dir);
 
     if conn.needs_config() {
+        log::trace!("Configuring cable {}", conn.get_name());
         let config = conn.get_config();
         let path = conn.config_path(&opts.working_dir);
         fs::write(&path, config.join("\n"))
             .context(format!("Writing config file for {}", conn.name))?;
     }
 
+    log::debug!("Executing {cmd} {:?}", args);
     exec(&cmd, &args).context(format!("Starting cable {}", conn.name))
 }
 
@@ -351,12 +358,16 @@ pub fn topology_status(opts: Options, devices: Option<Vec<String>>, verbose: u8)
         };
         println!("- {} {}", conn.name, status);
         if verbose > 0 {
+            let endp_a = conn.get_a();
+            let endp_b = conn.get_b();
             println!(
-                "\tendpoint_a: {} {}\n\tendpoint_b: {} {}\n\twirefilter: {}",
-                conn.get_a().bold(),
-                option_to_string(conn.get_port_a()).bold(),
-                conn.get_b().bold(),
-                option_to_string(conn.get_port_b()).bold(),
+                "\tendpoint_a: {} {} {}\n\tendpoint_b: {} {} {}\n\twirefilter: {}",
+                endp_a.get_name().bold(),
+                option_to_string(endp_a.get_port()).bold(),
+                endp_a.get_protocol().to_string().bold(),
+                endp_b.get_name().bold(),
+                option_to_string(endp_b.get_port()).bold(),
+                endp_b.get_protocol().to_string().bold(),
                 conn.has_wirefilter().to_string().bold()
             );
         }

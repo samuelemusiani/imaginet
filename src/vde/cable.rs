@@ -1,4 +1,4 @@
-use super::{MGMT_FILE_NAME, PID_FILE_NAME};
+use super::{VdeConnProtocols, MGMT_FILE_NAME, PID_FILE_NAME};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -6,12 +6,39 @@ use std::path::PathBuf;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Cable {
     pub name: String,
-    pub a: String,
-    pub port_a: Option<String>,
-    pub b: String,
-    pub port_b: Option<String>,
+    pub a: Endpoint,
+    pub b: Endpoint,
     pub wirefilter: bool,
     pub config: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Endpoint {
+    name: String,
+    port: Option<String>,
+    protocol: VdeConnProtocols,
+}
+
+impl Endpoint {
+    pub fn new(name: String, port: Option<String>, protocol: VdeConnProtocols) -> Self {
+        Self {
+            name,
+            port,
+            protocol,
+        }
+    }
+
+    pub fn get_name(&self) -> &String {
+        &self.name
+    }
+
+    pub fn get_port(&self) -> Option<&String> {
+        self.port.as_ref()
+    }
+
+    pub fn get_protocol(&self) -> &VdeConnProtocols {
+        &self.protocol
+    }
 }
 
 impl Cable {
@@ -19,16 +46,16 @@ impl Cable {
         name: String,
         a: String,
         port_a: Option<String>,
+        protocol_a: VdeConnProtocols,
         b: String,
         port_b: Option<String>,
+        protocol_b: VdeConnProtocols,
         wirefilter: Option<bool>,
-    ) -> Cable {
-        Cable {
+    ) -> Self {
+        Self {
             name,
-            a,
-            port_a,
-            b,
-            port_b,
+            a: Endpoint::new(a, port_a, protocol_a),
+            b: Endpoint::new(b, port_b, protocol_b),
             wirefilter: wirefilter.unwrap_or(false),
             config: Vec::new(),
         }
@@ -50,20 +77,12 @@ impl Cable {
         &self.config
     }
 
-    pub fn get_a(&self) -> &String {
+    pub fn get_a(&self) -> &Endpoint {
         &self.a
     }
 
-    pub fn get_b(&self) -> &String {
+    pub fn get_b(&self) -> &Endpoint {
         &self.b
-    }
-
-    pub fn get_port_a(&self) -> Option<&String> {
-        self.port_a.as_ref()
-    }
-
-    pub fn get_port_b(&self) -> Option<&String> {
-        self.port_b.as_ref()
     }
 
     pub fn needs_config(&self) -> bool {
@@ -109,7 +128,7 @@ impl Cable {
 
     pub fn exec_command(&self) -> String {
         if self.wirefilter {
-            String::from("wirefilter")
+            String::from("dpipe")
         } else {
             String::from("vde_plug")
         }
@@ -117,15 +136,29 @@ impl Cable {
 
     pub fn exec_args(&self, base: &str) -> Vec<String> {
         let b = PathBuf::from(base);
-        let mut pa = b.join(&self.a).to_str().unwrap().to_owned();
-        let mut pb = b.join(&self.b).to_str().unwrap().to_owned();
+        let mut pa = b.join(&self.a.get_name()).to_str().unwrap().to_owned();
+        let mut pb = b.join(&self.b.get_name()).to_str().unwrap().to_owned();
 
-        if let Some(port) = &self.port_a {
-            pa.push_str(&format!("[{port}]"));
+        pa = match *self.a.get_protocol() {
+            VdeConnProtocols::VDE => format!("vde://{pa}"),
+            VdeConnProtocols::PTP => format!("ptp://{pa}"),
+        };
+
+        pb = match *self.b.get_protocol() {
+            VdeConnProtocols::VDE => format!("vde://{pb}"),
+            VdeConnProtocols::PTP => format!("ptp://{pb}"),
+        };
+
+        if let Some(port) = &self.a.get_port() {
+            if *self.a.get_protocol() == VdeConnProtocols::VDE {
+                pa.push_str(&format!("[{port}]"));
+            }
         }
 
-        if let Some(port) = &self.port_b {
-            pb.push_str(&format!("[{port}]"));
+        if let Some(port) = &self.b.get_port() {
+            if *self.b.get_protocol() == VdeConnProtocols::VDE {
+                pb.push_str(&format!("[{port}]"));
+            }
         }
 
         let pid_p = self.pid_path(base);
@@ -135,15 +168,20 @@ impl Cable {
             let conf_p = self.config_path(base);
 
             vec![
-                "--vde-plug".to_owned(),
-                format!("{pa}:{pb}"),
+                "--daemon".to_owned(),
                 "--pidfile".to_owned(),
                 pid_p,
+                "vde_plug".to_owned(),
+                pa,
+                "=".to_owned(),
+                "wirefilter".to_owned(),
                 "--mgmt".to_owned(),
                 mgmt_p,
                 "--rcfile".to_owned(),
                 conf_p,
-                "--daemon".to_owned(),
+                "=".to_owned(),
+                "vde_plug".to_owned(),
+                pb,
             ]
         } else {
             vec![
