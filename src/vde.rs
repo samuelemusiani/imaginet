@@ -124,14 +124,6 @@ impl Topology {
             }
         }
 
-        for ns in &self.namespaces {
-            for i in ns.get_interfaces() {
-                if i.get_endpoint() == name {
-                    anyhow::bail!("Device {} is connected to a namespace", name);
-                }
-            }
-        }
-
         Ok(())
     }
 
@@ -146,10 +138,20 @@ impl Topology {
     }
 }
 
-pub fn calculate_endpoint_type(t: &Topology, name: &str) -> String {
+pub fn find_endpoint_path(t: &Topology, name: &str, port: Option<&String>) -> Result<String> {
     for sw in t.get_switches() {
         if sw.get_name() == name {
-            return sw.sock_path(".");
+            return Ok(sw.sock_path("."));
+        }
+    }
+
+    // For the namespaces the port must be defined
+    let port =
+        port.ok_or_else(|| anyhow::anyhow!("Port is not defined and namespaces requires it"))?;
+
+    for ns in t.get_namespaces() {
+        if ns.get_name() == name {
+            return ns.conn_path(".", port);
         }
     }
 

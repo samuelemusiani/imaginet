@@ -291,11 +291,9 @@ pub fn topology_status(opts: Options, devices: Option<Vec<String>>, verbose: u8)
         if verbose > 0 {
             for i in n.get_interfaces() {
                 println!(
-                    "\tinterface: {}\n\tip: {}\n\tendpoint: {} {}",
+                    "\tinterface: {}\n\tip: {}",
                     i.get_name().bold(),
                     i.get_ip().bold(),
-                    i.get_endpoint().bold(),
-                    option_to_string(i.get_port()).bold()
                 );
             }
         }

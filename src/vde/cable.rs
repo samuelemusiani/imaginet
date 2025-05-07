@@ -7,9 +7,9 @@ use std::path::PathBuf;
 pub struct Cable {
     pub name: String,
     pub a: String,
-    pub port_a: Option<u32>,
+    pub port_a: Option<String>,
     pub b: String,
-    pub port_b: Option<u32>,
+    pub port_b: Option<String>,
     pub wirefilter: bool,
     pub config: Vec<String>,
 }
@@ -18,9 +18,9 @@ impl Cable {
     pub fn new(
         name: String,
         a: String,
-        port_a: Option<u32>,
+        port_a: Option<String>,
         b: String,
-        port_b: Option<u32>,
+        port_b: Option<String>,
         wirefilter: Option<bool>,
     ) -> Cable {
         Cable {
@@ -58,12 +58,12 @@ impl Cable {
         &self.b
     }
 
-    pub fn get_port_a(&self) -> Option<u32> {
-        self.port_a
+    pub fn get_port_a(&self) -> Option<&String> {
+        self.port_a.as_ref()
     }
 
-    pub fn get_port_b(&self) -> Option<u32> {
-        self.port_b
+    pub fn get_port_b(&self) -> Option<&String> {
+        self.port_b.as_ref()
     }
 
     pub fn needs_config(&self) -> bool {
@@ -120,11 +120,11 @@ impl Cable {
         let mut pa = b.join(&self.a).to_str().unwrap().to_owned();
         let mut pb = b.join(&self.b).to_str().unwrap().to_owned();
 
-        if let Some(port) = self.port_a {
+        if let Some(port) = &self.port_a {
             pa.push_str(&format!("[{port}]"));
         }
 
-        if let Some(port) = self.port_b {
+        if let Some(port) = &self.port_b {
             pb.push_str(&format!("[{port}]"));
         }
 

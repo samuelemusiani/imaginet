@@ -1,5 +1,8 @@
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+
+use super::PID_FILE_NAME;
 
 const STARTER_SCRIPT: &[u8] = include_bytes!("ns_starter.sh");
 
@@ -13,10 +16,6 @@ pub struct Namespace {
 pub struct NSInterface {
     name: String,
     ip: String,
-    /// relative path to the vde endpoint. The base path is not given
-    /// because it depends on the executor
-    endpoint: String,
-    port: Option<u32>,
 }
 
 impl Namespace {
@@ -39,10 +38,20 @@ impl Namespace {
         self.interfaces.push(interface);
     }
 
+    /// Get base path of all the files related to the switch given
+    /// the global base path
+    pub fn base_path(&self, base: &str) -> String {
+        PathBuf::from(base)
+            .join(&self.name)
+            .to_str()
+            .unwrap()
+            .to_owned()
+    }
+
     pub fn pid_path(&self, base: &str) -> String {
         // Path is written by the ns_starter.sh script
-        PathBuf::from(base)
-            .join(&format!("{}.pid", &self.name))
+        PathBuf::from(self.base_path(base))
+            .join(PID_FILE_NAME)
             .to_str()
             .unwrap()
             .to_owned()
@@ -50,6 +59,28 @@ impl Namespace {
 
     pub fn exec_command(&self) -> String {
         "vdens".to_owned()
+    }
+
+    /// Get the path of the interface connection given the global base path and
+    /// the interface name
+    pub fn conn_path(&self, base: &str, interface: &str) -> Result<String> {
+        for i in &self.interfaces {
+            if i.name != interface {
+                continue;
+            }
+
+            return Ok(PathBuf::from(self.base_path(base))
+                .join(&i.name)
+                .to_str()
+                .unwrap()
+                .to_owned());
+        }
+
+        anyhow::bail!(
+            "No interface found on {} that match the name {}",
+            &self.name,
+            interface
+        );
     }
 
     /// base: base path for the working directory.
@@ -64,12 +95,8 @@ impl Namespace {
 
         let b = PathBuf::from(base);
         for i in &self.interfaces {
-            let p = b.join(&i.endpoint).to_str().unwrap().to_owned();
-            if let Some(port) = i.port {
-                args.push(format!("{p}[{port}]"));
-            } else {
-                args.push(p);
-            }
+            let p = b.join(&i.name).to_str().unwrap().to_owned();
+            args.push(p);
         }
 
         let mut args2 = vec!["--".to_owned(), starter.to_owned(), base.to_owned(), name];
@@ -122,13 +149,8 @@ impl Namespace {
 }
 
 impl NSInterface {
-    pub fn new(name: String, ip: String, endpoint: String, port: Option<u32>) -> NSInterface {
-        NSInterface {
-            name,
-            ip,
-            endpoint,
-            port,
-        }
+    pub fn new(name: String, ip: String) -> NSInterface {
+        NSInterface { name, ip }
     }
 
     pub fn get_name(&self) -> &String {
@@ -137,14 +159,6 @@ impl NSInterface {
 
     pub fn get_ip(&self) -> &String {
         &self.ip
-    }
-
-    pub fn get_endpoint(&self) -> &String {
-        &self.endpoint
-    }
-
-    pub fn get_port(&self) -> Option<u32> {
-        self.port
     }
 }
 
