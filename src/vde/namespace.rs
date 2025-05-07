@@ -93,13 +93,13 @@ impl Namespace {
         let name = self.get_name().to_owned();
         let mut args = vec!["--hostname".to_owned(), name.clone(), "--multi".to_owned()];
 
-        let b = PathBuf::from(base);
+        let b = PathBuf::from(self.base_path(base));
         for i in &self.interfaces {
             let p = b.join(&i.name).to_str().unwrap().to_owned();
-            args.push(p);
+            args.push(format!("ptp://{p}"));
         }
 
-        let mut args2 = vec!["--".to_owned(), starter.to_owned(), base.to_owned(), name];
+        let mut args2 = vec!["--".to_owned(), starter.to_owned(), self.pid_path(base)];
         args.append(&mut args2);
         return args;
     }

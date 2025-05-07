@@ -92,6 +92,7 @@ pub fn topology_start(opts: Options, devices: Option<Vec<String>>) -> Result<()>
 
 fn start_switch(opts: &Options, sw: &crate::vde::Switch) -> Result<()> {
     let sw_name = sw.get_name();
+    log::trace!("Starting switch {}", sw_name);
     init_dir(sw.base_path(&opts.working_dir))
         .context(format!("Initializing base dir for {}", sw_name))?;
 
@@ -109,8 +110,10 @@ fn start_switch(opts: &Options, sw: &crate::vde::Switch) -> Result<()> {
 }
 
 fn start_namespace(opts: &Options, ns: &crate::vde::Namespace, script_path: &str) -> Result<()> {
-    log::trace!("Starting namespace {}", ns.get_name());
     let ns_name = ns.get_name();
+    log::trace!("Starting namespace {}", ns_name);
+    init_dir(ns.base_path(&opts.working_dir))
+        .context(format!("Initializing base dir for {}", ns_name))?;
 
     let cmd = ns.exec_command();
     log::debug!("Command: {}", cmd);
@@ -132,8 +135,7 @@ fn configure_namespace(opts: &Options, ns: &crate::vde::Namespace) -> Result<()>
 
     thread::sleep(std::time::Duration::new(1, 0));
     // The following format i choosen by the ns_starter.sh script
-    let path = format!("{}/{}.pid", &opts.working_dir, ns.get_name());
-    let pid = fs::read_to_string(&path)
+    let pid = fs::read_to_string(&ns.pid_path(&opts.working_dir))
         .context(format!("Reading pid file for {}", ns.get_name()))?
         .trim()
         .parse()

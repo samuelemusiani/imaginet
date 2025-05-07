@@ -1,7 +1,6 @@
 #!/bin/bash
 
-BASE=$1
-NAME=$2
+PID_FILE=$1
 
-echo $$ > $BASE/$NAME.pid
+echo $$ > $PID_FILE
 bash
