@@ -3,7 +3,7 @@ use clap::Parser;
 use env_logger;
 use home;
 use log;
-use std::{fs, process};
+use std::{fs, path::PathBuf, process, str::FromStr};
 
 mod config;
 mod executor;
@@ -434,9 +434,13 @@ fn topology_create(opts: executor::Options, config: Option<String>, force: bool)
 
     let t;
     if let Some(config) = config {
-        let file = fs::read_to_string(config).context("Reading config file")?;
+        let file = fs::read_to_string(&config).context("Reading config file")?;
 
-        let c = config::Config::from_string(&file).context("Parsing config")?;
+        let mut relative_path = PathBuf::from_str(&config)
+            .context("Converting config path provided to a valid path")?;
+        relative_path.pop();
+
+        let c = config::Config::from_string(&file, relative_path).context("Parsing config")?;
 
         t = config_to_vde_topology(c).context("Converting config to vde topology")?;
     } else {

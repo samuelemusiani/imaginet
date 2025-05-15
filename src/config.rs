@@ -1,7 +1,8 @@
-use anyhow::{Context, Result};
+use anyhow::{Context, Ok, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::net;
+use std::path::PathBuf;
 
 const DEFAULT_SWITCH_PORTS: u32 = 32;
 
@@ -49,12 +50,45 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn from_string(file: &str) -> Result<Config> {
-        let c = serde_yaml::from_str::<Self>(&file).context("Deserialize config file failed")?;
+    pub fn from_string(file: &str, relative_path: PathBuf) -> Result<Config> {
+        let mut c =
+            serde_yaml::from_str::<Self>(&file).context("Deserialize config file failed")?;
+
+        c.convert_paths(relative_path)
+            .context("Could not convert all paths to be relative to the main config file")?;
 
         c.checks().context("Config checks failed")?;
 
         Ok(c)
+    }
+
+    // In the main config file for a topoly some paths can be specified.
+    // For example the switch config path. We need to calculate the paths
+    // based on the relative_path for the main config file
+    fn convert_paths(&mut self, relative_path: PathBuf) -> Result<()> {
+        // For now the only paths present in the config file are
+        // - Switches config files
+        // - Cables config files
+
+        if let Some(ref mut sws) = &mut self.switch {
+            for sw in sws {
+                if let Some(ref mut conf) = &mut sw.config {
+                    let mut b = relative_path.clone();
+                    b.push(conf);
+
+                    sw.config = Some(
+                        b.to_str()
+                            .context(format!(
+                                "Can't convert path to string in switch {}. path: {:?}",
+                                sw.name, b
+                            ))?
+                            .to_owned(),
+                    );
+                }
+            }
+        }
+
+        Ok(())
     }
 
     fn checks(&self) -> Result<()> {
