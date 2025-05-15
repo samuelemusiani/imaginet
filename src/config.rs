@@ -231,11 +231,12 @@ impl Config {
                             }
                         }
                     } else if namespaces.get(name).is_some() {
-                        let port = edpt.port.as_ref().unwrap();
-                        if !used_set.insert(format!("{name}-{port}")) {
-                            anyhow::bail!(
-                                "Interface {port} on device {name} is used more than once."
-                            )
+                        if let Some(port) = edpt.port.as_ref() {
+                            if !used_set.insert(format!("{name}-{port}")) {
+                                anyhow::bail!(
+                                    "Interface {port} on device {name} is used more than once."
+                                )
+                            }
                         }
                     }
                 }
