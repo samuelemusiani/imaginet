@@ -12,9 +12,6 @@ Start inline per i namespaces
 
 Stop non controlla se la roba si ferma realmente.
 
-Se si fa partire un namespace senza far partire lo switch l'errore non è molto chiaro.
-Andrebbe controllato che la dipendenza sulla connessione sia attiva.
-
 Completare la modalità verbosa in tutto il codice (-v -vv -vvv) per debuggare.
 
 vdens in background? In modo da poter eseguire anche su macchine remote.
