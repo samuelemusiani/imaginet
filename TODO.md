@@ -1,0 +1,27 @@
+# TODO
+
+Il comando stop dovrebbe chiudere dolcemente tutto senza killare il pid :)
+
+Start inline per i namespaces
+
+Stop non controlla se la roba si ferma realmente.
+
+Se si fa partire un namespace senza far partire lo switch l'errore non è molto chiaro.
+Andrebbe controllato che la dipendenza sulla connessione sia attiva.
+
+Completare la modalità verbosa in tutto il codice (-v -vv -vvv) per debuggare.
+
+vdens in background? In modo da poter eseguire anche su macchine remote.
+
+Fare in modo che tutto possa essere configurabile da file: inline dei comandi
+di configurazione sia per switch che ns, ecc. Per vdens si può fare post-up, pre-up ad interfaccia
+
+Check per vedere che tutti gli eseguibili siano presenti. (Check sulla versione?)
+
+Aggiungere parametri arbitrari ai comandi per future implementazioni (senza dover
+aggiornare per forza anche il codice di imaginet).
+
+Fare test?
+
+Più topologie?
+
