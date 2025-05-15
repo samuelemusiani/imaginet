@@ -1,5 +1,11 @@
 # TODO
 
+vde_plug ptp:///path1 ptp:///path2  se si stacca un ptp si chiude il plug. È corretto?
+ 
+Start fa partire la roba anche se è già partita.
+
+Start non controlla se tutti i device i esistono nella topologia.
+
 Il comando stop dovrebbe chiudere dolcemente tutto senza killare il pid :)
 
 Start inline per i namespaces
