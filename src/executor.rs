@@ -160,15 +160,12 @@ fn configure_namespace(opts: &Options, ns: &crate::vde::Namespace) -> Result<()>
     for (i, el) in ns.get_interfaces().iter().enumerate() {
         let interface_name = el.get_name();
 
-        let v = vec![
-            format!("ip link set vde{} name {}", i, interface_name),
-            format!(
-                "ip addr add {} dev {}",
-                el.get_ip().clone().unwrap_or_else(|| "None".to_string()),
-                interface_name
-            ),
-            format!("ip link set {} up", interface_name),
-        ];
+        let mut v = vec![format!("ip link set vde{} name {}", i, interface_name)];
+        let ip = el.get_ip();
+        if let Some(ip) = ip {
+            v.push(format!("ip addr add {} dev {}", ip, interface_name));
+        }
+        v.push(format!("ip link set {} up", interface_name));
 
         for command in v {
             log::debug!(
