@@ -124,7 +124,7 @@ enum AddSubcommands {
         name: String,
 
         /// List of interfaces for the namespace. Each interface must start with --iface
-        /// and should have the following format: --iface <name> <ip> <endpoint> [<port>]
+        /// and should have the following format: --iface <name> [ip]
         #[clap(verbatim_doc_comment)]
         interfaces: Vec<String>,
     },
@@ -301,9 +301,9 @@ fn main() -> Result<()> {
                         }
 
                         for (n, i) in tmp.iter().enumerate() {
-                            if i.len() < 2 || i.len() > 4 {
+                            if i.len() < 1 || i.len() > 2 {
                                 anyhow::bail!(
-                                    "Interface {n} definition must have between 2 and 4 elements"
+                                    "Interface {n} definition must have between 1 and 2 elements"
                                 );
                             }
                         }
@@ -311,9 +311,13 @@ fn main() -> Result<()> {
                         let mut real_interfaces: Vec<config::NSInterface> = Vec::new();
                         for i in tmp.iter() {
                             let name = i[0].clone();
-                            let ip = i[1].clone();
-
+                            let ip = if i.len() == 2 {
+                                Some(i[1].clone())
+                            } else {
+                                None
+                            };
                             let inter = config::NSInterface { name, ip };
+
                             inter
                                 .checks()
                                 .context(format!("Checking interface {}", i[0]))?;
@@ -322,7 +326,7 @@ fn main() -> Result<()> {
 
                         let mut ns = vde::Namespace::new(name);
                         for i in real_interfaces {
-                            let ni = vde::NSInterface::new(i.name.clone(), i.ip.clone());
+                            let ni = vde::NSInterface::new(i.name.clone(), i.ip);
                             ns.add_interface(ni);
                         }
 
@@ -496,7 +500,7 @@ fn config_to_vde_topology(c: config::Config) -> Result<vde::Topology> {
                     "Adding interface {} to namespace {}. Ip: {}",
                     i.name,
                     ns.name,
-                    i.ip,
+                    i.ip.clone().unwrap_or_else(|| "None".to_string()),
                 );
                 let ni = vde::NSInterface::new(i.name.clone(), i.ip.clone());
                 n.add_interface(ni);

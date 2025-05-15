@@ -162,7 +162,11 @@ fn configure_namespace(opts: &Options, ns: &crate::vde::Namespace) -> Result<()>
 
         let v = vec![
             format!("ip link set vde{} name {}", i, interface_name),
-            format!("ip addr add {} dev {}", el.get_ip(), interface_name),
+            format!(
+                "ip addr add {} dev {}",
+                el.get_ip().clone().unwrap_or_else(|| "None".to_string()),
+                interface_name
+            ),
             format!("ip link set {} up", interface_name),
         ];
 
@@ -302,7 +306,10 @@ pub fn topology_status(opts: Options, devices: Option<Vec<String>>, verbose: u8)
                 println!(
                     "\tinterface: {}\n\tip: {}",
                     i.get_name().bold(),
-                    i.get_ip().bold(),
+                    i.get_ip()
+                        .clone()
+                        .unwrap_or_else(|| "None".to_string())
+                        .bold(),
                 );
             }
         }

@@ -15,7 +15,7 @@ pub struct Namespace {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NSInterface {
     name: String,
-    ip: String,
+    ip: Option<String>,
 }
 
 impl Namespace {
@@ -149,7 +149,7 @@ impl Namespace {
 }
 
 impl NSInterface {
-    pub fn new(name: String, ip: String) -> NSInterface {
+    pub fn new(name: String, ip: Option<String>) -> NSInterface {
         NSInterface { name, ip }
     }
 
@@ -157,7 +157,7 @@ impl NSInterface {
         &self.name
     }
 
-    pub fn get_ip(&self) -> &String {
+    pub fn get_ip(&self) -> &Option<String> {
         &self.ip
     }
 }

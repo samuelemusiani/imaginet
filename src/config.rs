@@ -29,7 +29,7 @@ pub struct Namespace {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NSInterface {
     pub name: String,
-    pub ip: String,
+    pub ip: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -294,13 +294,20 @@ impl Namespace {
 impl NSInterface {
     pub fn checks(&self) -> Result<()> {
         // Check if IP is valid in CIDR notation
-        let (ip, mask) = match self.ip.find('/') {
-            Some(p) => (&self.ip[..p], &self.ip[p + 1..]),
+
+        if self.ip.is_none() {
+            return Ok(());
+        }
+
+        let tmpip = self.ip.as_ref().unwrap();
+
+        let (ip, mask) = match tmpip.find('/') {
+            Some(p) => (&tmpip[..p], &tmpip[p + 1..]),
             None => anyhow::bail!("Invalid CIDR format, missing /"),
         };
         let res = ip
             .parse::<net::IpAddr>()
-            .context(format!("IP address: {}", self.ip))?;
+            .context(format!("IP address: {}", tmpip))?;
 
         let m = mask.parse::<u8>().context("Invalid mask, not a number")?;
         match res {
