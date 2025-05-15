@@ -13,7 +13,7 @@ The executable will be in `target/release/`.
 ## Usage
 
 ImagiNet provides a very helpful command line interface. Simply run:
-```bash
+```
 $ imaginet help
 Create and manage VDE topologies
 
@@ -42,7 +42,7 @@ Options:
   -V, --version              Print version
 ```
 Or `help` before a specific subcommand command:
-```bash
+```
 $ imaginet help create
 ``Create a topology from a yaml configuration
 
@@ -60,19 +60,19 @@ Options:
 
 1. First you need to define a network file in YAML format. Some examples can be found in `examples/`.
 2. The create the topology from the file with:
-```bash
+```
 $ imaginet create <CONFIG>
 ```
 3. The you can monitor the status with:
-```bash
+```
 $ imaginet status
 ```
 4. You can start all devices with:
-```bash
+```
 $ imaginet start
 ```
 or start a specific device with:
-```bash
+```
 $ imaginet start <DEVICE>
 ```
 
