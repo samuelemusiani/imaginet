@@ -12,6 +12,10 @@ The executable will be in `target/release/`.
 
 ## Usage
 
+[!IMPORTANT]
+To be able to successfuly use ImagiNet you must install [vde-2](https://github.com/virtualsquare/vde-2),
+[vdeplug4](https://github.com/rd235/vdeplug4) and [vdens](https://github.com/rd235/vdens).
+
 ImagiNet provides a very helpful command line interface. Simply run:
 ```
 $ imaginet help
