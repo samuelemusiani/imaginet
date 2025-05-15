@@ -386,7 +386,7 @@ switch:
     - name: "test"
       hub: true
 "#;
-        let c = Config::from_string(file).unwrap();
+        let c = Config::from_string(file, PathBuf::new()).unwrap();
         let sws = c.switch.unwrap();
         assert_eq!(sws.len(), 1);
         let sw = &sws[0];
