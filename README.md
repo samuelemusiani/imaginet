@@ -20,33 +20,40 @@ Create and manage VDE topologies
 Usage: imaginet [OPTIONS] [COMMAND]
 
 Commands:
-  attach  Attach to a device in a topology
-  create  Create a topology
-  start   Start a topology
-  status  Status of running topology
-  stop    Stop a topology
+  add     Add a device to the current topology
+  attach  Attach to a device in the topology
+  create  Create a topology from a yaml configuration
+  clear   Stop and delete the current topology
+  dump    Dump current raw configuration
   exec    Execute a command in a device
+  import  Import a topology from a raw configuration file (generated with dump)
+  rm      Remove a device from the topology
+  start   Start devices in the current topology
+  status  Status of running topology
+  stop    Stop devices in the current topology
   help    Print this message or the help of the given subcommand(s)
 
 Options:
   -b, --base-dir <BASE_DIR>  Base directory for all imaginet files
   -t, --terminal <TERMINAL>  Terminal to open when starting or attaching to a device
-  -c, --conifg <CONIFG>      Path to configuration file
+  -c, --config <CONFIG>      Path to global configuration file
+  -v, --verbose...           Verbosity level. Can be used multiple times for increased verbosity
   -h, --help                 Print help
   -V, --version              Print version
 ```
 Or `help` before a specific subcommand command:
 ```bash
 $ imaginet help create
-Create a topology
+``Create a topology from a yaml configuration
 
-Usage: imaginet create <CONFIG>
+Usage: imaginet create [OPTIONS] [CONFIG]
 
 Arguments:
-  <CONFIG>  Path to configuration file
+  [CONFIG]  Path to configuration file. If not provided, an empty topology is created
 
 Options:
-  -h, --help  Print help
+  -f, --force  Force the creation of a new topology, deleting the current one
+  -h, --help   Print help
 ```
 
 ### How to 
