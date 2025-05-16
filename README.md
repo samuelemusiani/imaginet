@@ -7,6 +7,21 @@ Internet) for the emulations. It's like GNS3 or PacketTracer but without the guy
 and more limited functionalities. This project was designed with the intent of 
 helping teach the basics of networking. It was not designed to cover all VDE 
 features, and it was not designed to create the most efficient topology.
+
+
+## Index
+
+- [Index](#index)
+- [Compile](#compile)
+- [Usage](#usage)
+- [How to](#how-to)
+- [Terminal configuration](#terminal-configuration)
+- [Troubleshooting](#troubleshooting)
+* [Namespace not starting](#namespace-not-starting)
+* [Switch not starting](#switch-not-starting)
+* [Cable not starting](#cable-not-starting)
+- [Internals](#internals)
+
 ## Compile
 
 The project is written in Rust and must be compiled trough cargo.
@@ -97,7 +112,7 @@ problems you can increas the verbosity of the program by adding `-v` for INFO,
 
 To debug some common issues, try looking at the following sections
 
-### Namespaces not starting
+### Namespace not starting
 
 The first step is to try starting a simple namespace from a terminal. Can you 
 open a terminal, type `vdens` and actually open the namespace?
