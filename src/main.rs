@@ -283,47 +283,8 @@ fn main() -> Result<()> {
                 let mut t = executor::get_topology(&opts).context("Getting topology")?;
                 match d {
                     AddSubcommands::Namespace { name, interfaces } => {
-                        // Interface parsing
-                        let mut tmp: Vec<Vec<String>> = Vec::new();
-
-                        if interfaces[0] != "--iface" {
-                            anyhow::bail!("Interface definition must start with --iface");
-                        }
-
-                        for i in interfaces.iter() {
-                            if i == "--iface" {
-                                tmp.push(Vec::new());
-                            } else {
-                                tmp.last_mut()
-                                    .ok_or(anyhow::anyhow!("Empty vector"))?
-                                    .push(i.clone());
-                            }
-                        }
-
-                        for (n, i) in tmp.iter().enumerate() {
-                            if i.len() < 1 || i.len() > 2 {
-                                anyhow::bail!(
-                                    "Interface {n} definition must have between 1 and 2 elements"
-                                );
-                            }
-                        }
-
-                        let mut real_interfaces: Vec<config::NSInterface> = Vec::new();
-                        for i in tmp.iter() {
-                            let name = i[0].clone();
-                            let ip = if i.len() == 2 {
-                                Some(i[1].clone())
-                            } else {
-                                None
-                            };
-                            let inter = config::NSInterface { name, ip };
-
-                            inter
-                                .checks()
-                                .context(format!("Checking interface {}", i[0]))?;
-                            real_interfaces.push(inter);
-                        }
-
+                        let real_interfaces =
+                            parse_interfaces(interfaces).context("Parsing interfaces")?;
                         let mut ns = vde::Namespace::new(name);
                         for i in real_interfaces {
                             let ni = vde::NSInterface::new(i.name.clone(), i.ip);
@@ -567,4 +528,51 @@ fn parse_config_file(file: &str) -> Result<Config> {
     let file = fs::read_to_string(file).context("Reading config file")?;
     let c = Config::from_string(&file).context("Parsing config")?;
     Ok(c)
+}
+
+fn parse_interfaces(interfaces: Vec<String>) -> Result<Vec<config::NSInterface>> {
+    if interfaces.is_empty() {
+        return Ok(vec![]);
+    }
+
+    // Interface parsing
+    let mut tmp: Vec<Vec<String>> = Vec::new();
+
+    if interfaces[0] != "--iface" {
+        anyhow::bail!("Interface definition must start with --iface");
+    }
+
+    for i in interfaces.iter() {
+        if i == "--iface" {
+            tmp.push(Vec::new());
+        } else {
+            tmp.last_mut()
+                .ok_or(anyhow::anyhow!("Empty vector"))?
+                .push(i.clone());
+        }
+    }
+
+    for (n, i) in tmp.iter().enumerate() {
+        if i.len() < 1 || i.len() > 2 {
+            anyhow::bail!("Interface {n} definition must have between 1 and 2 elements");
+        }
+    }
+
+    let mut real_interfaces: Vec<config::NSInterface> = Vec::new();
+    for i in tmp.iter() {
+        let name = i[0].clone();
+        let ip = if i.len() == 2 {
+            Some(i[1].clone())
+        } else {
+            None
+        };
+        let inter = config::NSInterface { name, ip };
+
+        inter
+            .checks()
+            .context(format!("Checking interface {}", i[0]))?;
+        real_interfaces.push(inter);
+    }
+
+    return Ok(real_interfaces);
 }
