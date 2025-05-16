@@ -101,14 +101,19 @@ fn start_switch(opts: &Options, sw: &crate::vde::Switch) -> Result<()> {
         .context(format!("Initializing base dir for {}", sw_name))?;
 
     if sw.needs_config() {
+        log::debug!("Switch needs configuration");
         let config = sw.get_config();
+        log::trace!("config: {config:?}");
         let path = sw.config_path(&opts.working_dir);
+        log::debug!("Writing configuration to {path}");
         fs::write(&path, config.join("\n"))
             .context(format!("Writing config file for {}", sw_name))?;
     }
 
     let cmd = sw.exec_command();
+    log::debug!("Command: {}", cmd);
     let args = sw.exec_args(&opts.working_dir);
+    log::debug!("Args: {:?}", args);
 
     exec(&cmd, &args).context(format!("Starting switch {}", sw_name))
 }
@@ -126,7 +131,7 @@ fn start_namespace(opts: &Options, ns: &crate::vde::Namespace, script_path: &str
 
     // Namespaces need to be started in a new terminal
 
-    log::debug!("Starting terminal. Terminal: {}", opts.terminal);
+    log::debug!("Terminal: {}", opts.terminal);
     log::debug!("Terminal args: {:?}", opts.terminal_args);
     exec_terminal(&opts.terminal, &opts.terminal_args, &cmd, &args)
         .context(format!("Starting namespace {}", ns_name))
@@ -253,6 +258,7 @@ fn exec_terminal(
 
 /// Execute a command with args
 fn exec(cmd: &str, args: &Vec<String>) -> Result<()> {
+    log::debug!("Executing: {cmd} {args:?}");
     process::Command::new(cmd)
         .args(args)
         .spawn()

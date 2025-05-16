@@ -168,6 +168,44 @@ command on a separate terminal to see if any errors are printed.
 
 ### Switch not starting
 
+The first step is to try starting a switch from a terminal. Can you 
+open a terminal, type `vde_switch`, spam some new lines and actually see a shell
+like the folliwing?
+```
+$ vde_switch
+
+
+vde$ 
+```
+
+If you can successfully start the switch manually, you should try executing 
+the command provided by ImagiNet. The steps for adding a switch are almost the
+same as the ones used for adding a namespace. For a more detailed explanation
+you should look at [Namespace not starting](#namespace-not-starting).
+You should execute the following commans:
+```
+$ imaginet create
+Topology created
+$ imaginet add switch sw1
+$ imaginet status
+Topology status
+Namespaces:
+
+Switches:
+- sw1 dead
+
+Cables:
+$ imaginet -vvv start sw1
+```
+You should see a line like the following:
+```
+[DEBUG imaginet::executor] Executing: vde_switch ["--pidfile", "/tmp/imnet/sw1/pid", "--mgmt", "/tmp/imnet/sw1/mgmt", "--sock", "/tmp/imnet/sw1/sock", "--rcfile", "/tmp/imnet/sw1/config", "--numports", "32", "--daemon"]
+```
+All the arguments are specific to the switch. If you are interested, you can take
+a look at the [Internals](#internals) section.
+As with the namespace, you should try running the command manually and see if
+any errors are printed.
+
 ### Cable not starting
 
 ## Internals
