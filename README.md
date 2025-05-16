@@ -2,6 +2,11 @@
 
 A command line tool to configure and manage complex VDE network topologies.
 
+ImagiNet is a network software emulator that leverages VDE (Virtual Distributed 
+Internet) for the emulations. It's like GNS3 or PacketTracer but without the guy 
+and more limited functionalities. This project was designed with the intent of 
+helping teach the basics of networking. It was not designed to cover all VDE 
+features, and it was not designed to create the most efficient topology.
 ## Compile
 
 The project is written in Rust and must be compiled trough cargo.
@@ -79,6 +84,74 @@ or start a specific device with:
 ```
 $ imaginet start <DEVICE>
 ```
+
+## Terminal configuration
+
+TODO
+
+## Troubleshooting
+
+It's possible that something does not work properly. To start troubleshoot your 
+problems you can increas the verbosity of the program by adding `-v` for INFO, 
+`-vv` for DEBUG or `-vvv` for TRACE messages.
+
+To debug some common issues, try looking at the following sections
+
+### Namespaces not starting
+
+The first step is to try starting a simple namespace from a terminal. Can you 
+open a terminal, type `vdens` and actually open the namespace?
+
+If no errors are printend you are probably inside the namespace and you can 
+check by typing `ip a` a seeing that you only have a `lo` interface.
+
+If you can successfully start the namespace manually, you should try executing 
+the command provided by ImagiNet. Start by creating an empty topology:
+```
+$ imaginet create
+Topology created
+```
+You can now add the simplest namespace possible: the one without any interface:
+```
+$ imaginet add namespace ns1
+```
+You should now see a single namespace with the `status` command:
+```
+$ imaginet status
+Topology status
+Namespaces:
+- ns1 dead
+
+Switches:
+
+Cables:
+```
+Then execute the following command to start the namespace in a very verbose way:
+```
+$ imaginet -vvv start ns1
+```
+You should see a line like:
+```
+[DEBUG imaginet::executor] Executing: foot [] vdens ["--hostname", "ns1", "-", "/tmp/imnet/ns_starter.sh", "/tmp/imnet/ns1/pid"]
+```
+This indicates that the command ImagiNet is trying to run is:
+```
+foot vdens --hostname ns1 - /tmp/imnet/ns_starter.sh /tmp/imnet/ns1/pid
+```
+- `foot` is my current terminal. You can use whatever terminal you prefer, as 
+long as it can accept arguments to execute a program. Look at the 
+[terminal configuration](#terminal-configuration) section.
+- `[]` These are an array of arguments for configuring the foot terminal. Foot 
+does not require arguments, so it's empty. Look at the 
+[terminal configuration](#terminal-configuration) section if your terminal 
+requires special arguments.
+- `vdens --hostname ns1 - /tmp/imnet/ns_starter.sh /tmp/imnet/ns1/pid` This is 
+the actual command to start the namespace. You should try to execute this 
+command on a separate terminal to see if any errors are printed.
+
+### Switch not starting
+
+### Cable not starting
 
 ## Internals
 
