@@ -17,9 +17,9 @@ features, and it was not designed to create the most efficient topology.
 - [How to](#how-to)
 - [Terminal configuration](#terminal-configuration)
 - [Troubleshooting](#troubleshooting)
-* [Namespace not starting](#namespace-not-starting)
-* [Switch not starting](#switch-not-starting)
-* [Cable not starting](#cable-not-starting)
+    - [Namespace not starting](#namespace-not-starting)
+    - [Switch not starting](#switch-not-starting)
+    - [Cable not starting](#cable-not-starting)
 - [Internals](#internals)
 
 ## Compile
