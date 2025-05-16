@@ -1,5 +1,5 @@
 # This is the config file for imaginet
 
 terminal:
-  path: /usr/bin/foot
+  executable: /usr/bin/foot
   args: []

@@ -177,7 +177,7 @@ enum AddSubcommands {
 
 #[derive(serde::Deserialize)]
 struct Terminal {
-    path: String,
+    executable: String,
     args: Vec<String>,
 }
 
@@ -234,7 +234,7 @@ fn main() -> Result<()> {
         terminal: if let Some(term) = args.terminal {
             term
         } else if let Some(term) = &conf.terminal {
-            term.path.clone()
+            term.executable.clone()
         } else {
             std::env::var("TERM")
                 .context("Could not find a terminal emulator in TERM environment variable: {e}")?

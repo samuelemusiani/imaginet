@@ -102,9 +102,30 @@ or start a specific device with:
 $ imaginet start <DEVICE>
 ```
 
-## Terminal configuration
+## Configuration
 
-TODO
+It's possible to define some configuration options in a global configuration 
+file to avoid specifying them on the command line every time. Other options 
+(i.e. terminal arguments) can not be specified on the command line and, if they 
+are needed, they have to be specified in the configuration file. 
+
+A template for a configuration file is present in the file `config.yaml`.
+You can pass this file to ImagiNet with the option `--config` or you could put
+it in `$HOME/.config/imaginet/config.yaml`.
+
+### Terminal configuration
+
+Some terminals (i.e. `gnome-terminal`) needs some arguments to function correctly.
+The idea is that ImagiNet should be able to execute the terminal with some arguments
+and the arguments are the first program that the terminal will execute.
+
+For `foot` no argument is necessary, but for `gnome-terminal` the following 
+configuration is needed:
+```
+terminal:
+  executable: gnome-terminal
+  args: ["--"]
+```
 
 ## Troubleshooting
 
