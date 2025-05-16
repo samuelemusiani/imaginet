@@ -126,9 +126,6 @@ impl Topology {
     }
 
     fn check_dependecy(&self, name: &String) -> Result<()> {
-        dbg!("check_dependency");
-        dbg!(name);
-
         for con in &self.cables {
             let eqa = con.get_a().get_name().split('/').any(|x| x == name);
             let eqb = con.get_b().get_name().split('/').any(|x| x == name);
