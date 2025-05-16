@@ -157,13 +157,19 @@ fn configure_namespace(opts: &Options, ns: &crate::vde::Namespace) -> Result<()>
         exec(&cmd, &args)
     };
 
+    // Bringing lo up
+    let command = "ip link set lo up";
+    log::debug!("Configuring namespace. command: {command}, interface: lo ns: {ns_name}");
+
+    ns_exec(&command).context(format!(
+        "Executing command '{command}' on interface lo on {ns_name}"
+    ))?;
+    thread::sleep(std::time::Duration::from_millis(100));
+
     for (i, el) in ns.get_interfaces().iter().enumerate() {
         let interface_name = el.get_name();
 
-        let mut v = vec![
-            format!("ip link set vde{} name {}", i, interface_name),
-            format!("ip link set lo up"),
-        ];
+        let mut v = vec![format!("ip link set vde{} name {}", i, interface_name)];
         let ip = el.get_ip();
         if let Some(ip) = ip {
             v.push(format!("ip addr add {} dev {}", ip, interface_name));
@@ -232,6 +238,8 @@ fn exec_terminal(
     cmd: &str,
     args: &Vec<String>,
 ) -> Result<()> {
+    log::debug!("Executing: {terminal} {terminal_args:?} {cmd} {args:?}");
+
     process::Command::new(terminal)
         .args(terminal_args)
         .arg(cmd)

@@ -86,20 +86,25 @@ impl Namespace {
     /// base: base path for the working directory.
     /// starter: the name of the starter script that will perform pid writing
     pub fn exec_args(&self, base: &str, starter: &str) -> Vec<String> {
-        if self.interfaces.len() == 0 {
-            return vec![];
-        }
-
         let name = self.get_name().to_owned();
-        let mut args = vec!["--hostname".to_owned(), name.clone(), "--multi".to_owned()];
+        let mut args = vec!["--hostname".to_owned(), name.clone()];
 
-        let b = PathBuf::from(self.base_path(base));
-        for i in &self.interfaces {
-            let p = b.join(&i.name).to_str().unwrap().to_owned();
-            args.push(format!("ptp://{p}"));
+        if !self.interfaces.is_empty() {
+            args.push("--multi".to_owned());
+            let b = PathBuf::from(self.base_path(base));
+            for i in &self.interfaces {
+                let p = b.join(&i.name).to_str().unwrap().to_owned();
+                args.push(format!("ptp://{p}"));
+            }
+
+            args.push("--".to_owned());
+        } else {
+            // If no interfaces on the namespace are present we have to
+            // specify a '-' in order to make the starter command work
+            args.push("-".to_owned());
         }
 
-        let mut args2 = vec!["--".to_owned(), starter.to_owned(), self.pid_path(base)];
+        let mut args2 = vec![starter.to_owned(), self.pid_path(base)];
         args.append(&mut args2);
         return args;
     }
