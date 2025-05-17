@@ -225,7 +225,8 @@ You should see a line like the following:
 All the arguments are specific to the switch. If you are interested, you can take
 a look at the [Internals](#internals) section.
 As with the namespace, you should try running the command manually and see if
-any errors are printed.
+any errors are printed. It could be helpful to run the command without the 
+`--daemon` argument to see the output of the switch.
 
 ### Cable not starting
 
