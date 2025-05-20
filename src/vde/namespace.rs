@@ -219,6 +219,10 @@ impl NSInterface {
     pub fn get_ip(&self) -> &Option<String> {
         &self.ip
     }
+
+    pub fn get_gateway(&self) -> &Option<String> {
+        &self.gateway
+    }
 }
 
 #[cfg(test)]

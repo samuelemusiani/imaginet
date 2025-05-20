@@ -312,13 +312,16 @@ pub fn topology_status(opts: Options, devices: Option<Vec<String>>, verbose: u8)
         if verbose > 0 {
             for i in n.get_interfaces() {
                 println!(
-                    "\tinterface: {}\n\tip: {}",
+                    "\tinterface: {}\n\t   ip: {}",
                     i.get_name().bold(),
                     i.get_ip()
                         .clone()
                         .unwrap_or_else(|| "None".to_string())
                         .bold(),
                 );
+                if let Some(gt) = i.get_gateway() {
+                    println!("\t   gateway: {}", gt.bold(),);
+                }
             }
         }
     }
