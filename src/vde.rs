@@ -43,7 +43,7 @@ impl Topology {
         }
     }
 
-    fn is_name_used(&mut self, name: &str) -> bool {
+    pub fn is_name_used(&self, name: &str) -> bool {
         for sw in &self.switches {
             if sw.get_name() == name {
                 return true;

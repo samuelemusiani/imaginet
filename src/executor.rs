@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use colored::Colorize;
 use std::io::Write;
 use std::os::unix::{fs::PermissionsExt, process::CommandExt}; // Used for exec(), and permissions set on the namespace starter script
@@ -45,10 +45,22 @@ pub fn topology_start(opts: Options, devices: Option<Vec<String>>) -> Result<()>
 
     let devices = devices.unwrap_or(vec![]);
 
+    // Check if all the device provided are in the topology
+    for d in &devices {
+        if !t.is_name_used(d) {
+            bail!("Device {d} does not exists on the current topology");
+        }
+    }
+
     log::trace!("Starting switches");
     for sw in t.get_switches() {
         if !devices.is_empty() && !devices.contains(&sw.get_name()) {
             log::trace!("Skipping switch {}", sw.get_name());
+            continue;
+        }
+
+        if pid_path_is_alive(&sw.pid_path(&opts.working_dir))? {
+            log::warn!("Switch {} is already started, skipping", sw.get_name());
             continue;
         }
 
@@ -75,6 +87,11 @@ pub fn topology_start(opts: Options, devices: Option<Vec<String>>) -> Result<()>
             continue;
         }
 
+        if pid_path_is_alive(&ns.pid_path(&opts.working_dir))? {
+            log::warn!("Namespace {} is already started, skipping", ns.get_name());
+            continue;
+        }
+
         start_namespace(&opts, ns, &script_path)?;
         configure_namespace(&opts, ns)?;
     }
@@ -83,6 +100,14 @@ pub fn topology_start(opts: Options, devices: Option<Vec<String>>) -> Result<()>
     for conn in t.get_cables() {
         if !devices.is_empty() && !devices.contains(&conn.name) {
             log::trace!("Skipping cable {}", conn.name);
+            continue;
+        }
+
+        if pid_path_is_alive(&conn.pid_path(&opts.working_dir))? {
+            log::warn!(
+                "Connection {} is already started, skipping",
+                conn.get_name()
+            );
             continue;
         }
 
