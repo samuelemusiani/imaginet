@@ -17,6 +17,7 @@ pub struct Namespace {
 pub struct NSInterface {
     name: String,
     ip: Option<String>,
+    gateway: Option<String>,
 }
 
 impl Namespace {
@@ -68,6 +69,13 @@ impl Namespace {
                 v.push(format!("ip addr add {} dev {}", ip, interface_name));
             }
             v.push(format!("ip link set {} up", interface_name));
+
+            if let Some(gt) = &el.gateway {
+                v.push(format!(
+                    "ip route add default via {} dev {}",
+                    gt, interface_name
+                ));
+            }
         }
         return v;
     }
@@ -200,8 +208,8 @@ impl Namespace {
 }
 
 impl NSInterface {
-    pub fn new(name: String, ip: Option<String>) -> NSInterface {
-        NSInterface { name, ip }
+    pub fn new(name: String, ip: Option<String>, gateway: Option<String>) -> NSInterface {
+        NSInterface { name, ip, gateway }
     }
 
     pub fn get_name(&self) -> &String {

@@ -1,4 +1,4 @@
-use anyhow::{Context, Ok, Result};
+use anyhow::{bail, Context, Ok, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::net;
@@ -30,6 +30,7 @@ pub struct Namespace {
 pub struct NSInterface {
     pub name: String,
     pub ip: Option<String>,
+    pub gateway: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -315,9 +316,18 @@ impl Switch {
 
 impl Namespace {
     fn checks(&self) -> Result<()> {
+        let mut found_gateway = false;
         for i in &self.interfaces {
             i.checks()
                 .context(format!("Checks failed for interface {}", i.name))?;
+
+            if i.gateway.is_some() {
+                if found_gateway {
+                    bail!("Only one interface can have a gateway")
+                } else {
+                    found_gateway = true
+                }
+            }
         }
 
         Ok(())
@@ -329,7 +339,11 @@ impl NSInterface {
         // Check if IP is valid in CIDR notation
 
         if self.ip.is_none() {
-            return Ok(());
+            if self.gateway.is_none() {
+                return Ok(());
+            } else {
+                bail!("Gateway is invalid if no ip address is specified")
+            }
         }
 
         let tmpip = self.ip.as_ref().unwrap();
@@ -338,23 +352,71 @@ impl NSInterface {
             Some(p) => (&tmpip[..p], &tmpip[p + 1..]),
             None => anyhow::bail!("Invalid CIDR format, missing /"),
         };
-        let res = ip
+        let ip = ip
             .parse::<net::IpAddr>()
             .context(format!("IP address: {}", tmpip))?;
 
-        let m = mask.parse::<u8>().context("Invalid mask, not a number")?;
-        match res {
+        let mask = mask.parse::<u8>().context("Invalid mask, not a number")?;
+        match ip {
             net::IpAddr::V4(_) => {
-                if m > 32 {
+                if mask > 32 {
                     anyhow::bail!("Invalid mask, too large for IPv4 (> 32)");
                 }
             }
             net::IpAddr::V6(_) => {
-                if m > 128 {
+                if mask > 128 {
                     anyhow::bail!("Invalid mask, too large for IPv6 (> 128)");
                 }
             }
         };
+
+        if self.gateway.is_none() {
+            return Ok(());
+        }
+
+        let tmpgateway = self.gateway.as_ref().unwrap();
+        let gt = tmpgateway
+            .parse::<net::IpAddr>()
+            .context(format!("Gateway address: {}", tmpgateway))?;
+
+        match ip {
+            net::IpAddr::V4(ip) => match gt {
+                net::IpAddr::V6(_) => bail!("IP is IPv4 but gateway is IPv6"),
+                net::IpAddr::V4(gt) => {
+                    let ip = ip.to_bits();
+                    let gt = gt.to_bits();
+                    let mask = u32::MAX << (32 - mask);
+
+                    log::debug!("ip {ip} gateway {gt} mask {mask}");
+                    log::debug!("ip & mask {} gateway & mask {} ", ip & mask, gt & mask);
+
+                    if ip == gt {
+                        bail!("IP and Gatway can't be the same")
+                    }
+                    if ip & mask != gt & mask {
+                        bail!("Gateway is not in the same subnet as the ip")
+                    }
+                }
+            },
+            net::IpAddr::V6(ip) => match gt {
+                net::IpAddr::V4(_) => bail!("IP is IPv4 but gateway is IPv6"),
+                net::IpAddr::V6(gt) => {
+                    let ip = ip.to_bits();
+                    let gt = gt.to_bits();
+                    let mask = u128::MAX << (128 - mask);
+
+                    log::debug!("ip {ip} gateway {gt} mask {mask}");
+                    log::debug!("ip & mask {} gateway & mask {} ", ip & mask, gt & mask);
+
+                    if ip == gt {
+                        bail!("IP and Gatway can't be the same")
+                    }
+                    if ip & mask != gt & mask {
+                        bail!("Gateway is not in the same subnet as the ip")
+                    }
+                }
+            },
+        }
 
         Ok(())
     }

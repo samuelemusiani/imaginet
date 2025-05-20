@@ -1,83 +1,61 @@
 switch:
-  - name: sw1
-    #config: ./sw1.conf
-    # Default to 32 ports
-    # ports: 48
-    #hub: true
+  #- name: sw1
 
-  #- name: sw2
 
 namespace:
   - name: ns1
     interfaces: 
       - name: eth0
+        ip: 130.136.3.1/24
+        gateway: 130.136.3.254
+
+  - name: ns2
+    interfaces:
+      - name: eth0
+        ip: 130.136.3.254/24
+      - name: eth1
         ip: 10.0.0.1/24
-  #
-      # - name: eth1
-      #   endpoint: sw1
-      #   port: 2
-      #   ip: 10.1.0.1/24
 
-  # - name: ns2
-  #   interfaces:
-  #     - name: eth0
-  #       ip: 10.0.0.2/24
+  - name: ns3
+    interfaces:
+      - name: eth0
+        ip: 10.0.0.2/24
+        gateway: 10.0.0.1
+      - name: eth1
+        ip: 130.136.201.254/24
 
-  # - name: ns3
-  #   interfaces:
-  #     - name: eth0
-  #       endpoint: 
-  #         name: sw1
-  #       ip: 10.1.0.2/24
 
-  # - name: ns3
-  #   interfaces:
-  #     - name: eth0
-  #       endpoint: sw1
-  #       port: 20
-  #       ip: 10.1.0.2/24
-
-  # - name: ns3
-  #   interfaces: 
-  #     - name: eth0
-  #       endpoint: sw2
-  #       # If port is specified i should use vde_plug
-  #       ip: 10.1.0.1/24
-  #
-  # - name: ns4
-  #   interfaces: 
-  #     - name: eth0
-  #       endpoint: sw2
-  #       # If port is specified i should use vde_plug
-  #       ip: 10.1.0.2/24
+  - name: ns4
+    interfaces: 
+      - name: eth0
+        ip: 130.136.201.1/24
+        gateway: 130.136.201.254
 
 
 cable:
-#   - name: conn1
-#     endpoint_a:
-#       name: sw1
-#       port: 4
-#     endpoint_b:
-#       name: sw2
-#       port: 5
-#     wirefilter: true
-#     config: ./conn1.conf
-
   - name: conn1
     endpoint_a:
       name: ns1
-      port: eth0
+      port: "eth0"
     endpoint_b:
-      name: sw1
-      port: "1"
-    #wirefilter: true
+      name: ns2
+      port: "eth0"
+    # wirefilter: true
+    # config: ./conn1.conf
 
-  # - name: conn2
-  #   endpoint_a:
-  #     name: ns2
-  #     port: eth0
-  #   endpoint_b:
-  #     name: sw1
-  #     port: "2"
-  #   wirefilter: true
-    #config: ./conn1.conf
+  - name: conn2
+    endpoint_a:
+      name: ns2
+      port: "eth1"
+    endpoint_b:
+      name: ns3
+      port: "eth0"
+
+
+  - name: conn3
+    endpoint_a:
+      name: ns3
+      port: "eth1"
+    endpoint_b:
+      name: ns4
+      port: "eth0"

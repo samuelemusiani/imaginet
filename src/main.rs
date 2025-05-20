@@ -133,7 +133,7 @@ enum AddSubcommands {
         name: String,
 
         /// List of interfaces for the namespace. Each interface must start with --iface
-        /// and should have the following format: --iface <name> [ip]
+        /// and should have the following format: --iface <name> [ip] [gateway]
         #[clap(verbatim_doc_comment)]
         interfaces: Vec<String>,
     },
@@ -296,7 +296,7 @@ fn main() -> Result<()> {
                             parse_interfaces(interfaces).context("Parsing interfaces")?;
                         let mut ns = vde::Namespace::new(name);
                         for i in real_interfaces {
-                            let ni = vde::NSInterface::new(i.name.clone(), i.ip);
+                            let ni = vde::NSInterface::new(i.name.clone(), i.ip, i.gateway);
                             ns.add_interface(ni);
                         }
 
@@ -476,7 +476,7 @@ fn config_to_vde_topology(c: config::Config) -> Result<vde::Topology> {
                     ns.name,
                     i.ip.clone().unwrap_or_else(|| "None".to_string()),
                 );
-                let ni = vde::NSInterface::new(i.name.clone(), i.ip.clone());
+                let ni = vde::NSInterface::new(i.name.clone(), i.ip.clone(), i.gateway.clone());
                 n.add_interface(ni);
             }
             for c in vde::Namespace::default_confing() {
@@ -568,20 +568,25 @@ fn parse_interfaces(interfaces: Vec<String>) -> Result<Vec<config::NSInterface>>
     }
 
     for (n, i) in tmp.iter().enumerate() {
-        if i.len() < 1 || i.len() > 2 {
-            anyhow::bail!("Interface {n} definition must have between 1 and 2 elements");
+        if i.len() < 1 || i.len() > 3 {
+            anyhow::bail!("Interface {n} definition must have between 1 and 3 elements");
         }
     }
 
     let mut real_interfaces: Vec<config::NSInterface> = Vec::new();
     for i in tmp.iter() {
         let name = i[0].clone();
-        let ip = if i.len() == 2 {
-            Some(i[1].clone())
+        let (ip, gateway) = if i.len() >= 2 {
+            let ip = Some(i[1].clone());
+            if i.len() == 3 {
+                (ip, Some(i[2].clone()))
+            } else {
+                (ip, None)
+            }
         } else {
-            None
+            (None, None)
         };
-        let inter = config::NSInterface { name, ip };
+        let inter = config::NSInterface { name, ip, gateway };
 
         inter
             .checks()
