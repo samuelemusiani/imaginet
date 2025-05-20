@@ -2,7 +2,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-use super::PID_FILE_NAME;
+use super::{CONF_FILE_NAME, PID_FILE_NAME};
 
 const STARTER_SCRIPT: &[u8] = include_bytes!("ns_starter.sh");
 
@@ -10,6 +10,7 @@ const STARTER_SCRIPT: &[u8] = include_bytes!("ns_starter.sh");
 pub struct Namespace {
     name: String,
     interfaces: Vec<NSInterface>,
+    config: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -23,6 +24,7 @@ impl Namespace {
         Namespace {
             name,
             interfaces: Vec::new(),
+            config: Vec::new(),
         }
     }
 
@@ -36,6 +38,38 @@ impl Namespace {
 
     pub fn add_interface(&mut self, interface: NSInterface) {
         self.interfaces.push(interface);
+    }
+
+    pub fn default_confing() -> Vec<String> {
+        vec!["ip link set lo up\n".to_owned()]
+    }
+
+    pub fn add_config(&mut self, config: String) {
+        // Should check if the config is valid
+        self.config.push(config);
+    }
+
+    pub fn needs_config(&self) -> bool {
+        !self.config.is_empty()
+    }
+
+    pub fn get_config(&self) -> &Vec<String> {
+        &self.config
+    }
+
+    pub fn config_for_interfaces(&self) -> Vec<String> {
+        let mut v = Vec::new();
+        for (i, el) in self.interfaces.iter().enumerate() {
+            let interface_name = el.get_name();
+
+            v.push(format!("ip link set vde{} name {}", i, interface_name));
+            let ip = el.get_ip();
+            if let Some(ip) = ip {
+                v.push(format!("ip addr add {} dev {}", ip, interface_name));
+            }
+            v.push(format!("ip link set {} up", interface_name));
+        }
+        return v;
     }
 
     /// Get base path of all the files related to the switch given
@@ -52,6 +86,14 @@ impl Namespace {
         // Path is written by the ns_starter.sh script
         PathBuf::from(self.base_path(base))
             .join(PID_FILE_NAME)
+            .to_str()
+            .unwrap()
+            .to_owned()
+    }
+
+    pub fn config_path(&self, base: &str) -> String {
+        PathBuf::from(self.base_path(base))
+            .join(CONF_FILE_NAME)
             .to_str()
             .unwrap()
             .to_owned()
@@ -104,7 +146,11 @@ impl Namespace {
             args.push("-".to_owned());
         }
 
-        let mut args2 = vec![starter.to_owned(), self.pid_path(base)];
+        let mut args2 = vec![
+            starter.to_owned(),
+            self.pid_path(base),
+            self.config_path(base),
+        ];
         args.append(&mut args2);
         return args;
     }

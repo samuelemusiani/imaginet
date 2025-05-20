@@ -18,10 +18,10 @@ namespace:
       #   port: 2
       #   ip: 10.1.0.1/24
 
-  - name: ns2
-    interfaces:
-      - name: eth0
-        ip: 10.0.0.2/24
+  # - name: ns2
+  #   interfaces:
+  #     - name: eth0
+  #       ip: 10.0.0.2/24
 
   # - name: ns3
   #   interfaces:
@@ -70,13 +70,14 @@ cable:
     endpoint_b:
       name: sw1
       port: "1"
+    #wirefilter: true
 
-  - name: conn2
-    endpoint_a:
-      name: ns2
-      port: eth0
-    endpoint_b:
-      name: sw1
-      port: "2"
-    wirefilter: true
+  # - name: conn2
+  #   endpoint_a:
+  #     name: ns2
+  #     port: eth0
+  #   endpoint_b:
+  #     name: sw1
+  #     port: "2"
+  #   wirefilter: true
     #config: ./conn1.conf

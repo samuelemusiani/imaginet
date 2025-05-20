@@ -1,4 +1,4 @@
-use super::{VdeConnProtocols, MGMT_FILE_NAME, PID_FILE_NAME};
+use super::{VdeConnProtocols, CONF_FILE_NAME, MGMT_FILE_NAME, PID_FILE_NAME};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -120,7 +120,7 @@ impl Cable {
 
     pub fn config_path(&self, base: &str) -> String {
         PathBuf::from(self.base_path(base))
-            .join("config")
+            .join(CONF_FILE_NAME)
             .to_str()
             .unwrap()
             .to_owned()

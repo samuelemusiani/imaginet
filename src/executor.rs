@@ -96,17 +96,7 @@ pub fn topology_start(opts: Options, devices: Option<Vec<String>>, inline: bool)
             continue;
         }
 
-        if inline {
-            log::warn!(
-                "Configuration of namespace is not possible if inline is specified. Skippin..."
-            );
-        }
-
         start_namespace(&opts, ns, &script_path, inline)?;
-        // For now, if inline is specified, configuration is not possible
-        if !inline {
-            configure_namespace(&opts, ns)?;
-        }
     }
 
     log::trace!("Starting cables");
@@ -177,6 +167,16 @@ fn start_namespace(
     init_dir(ns.base_path(&opts.working_dir))
         .context(format!("Initializing base dir for {}", ns_name))?;
 
+    if ns.needs_config() {
+        log::debug!("Switch needs configuration");
+        let config = ns.get_config();
+        log::trace!("config: {config:?}");
+        let path = ns.config_path(&opts.working_dir);
+        log::debug!("Writing configuration to {path}");
+        fs::write(&path, config.join("\n"))
+            .context(format!("Writing config file for {}", ns_name))?;
+    }
+
     let cmd = ns.exec_command();
     log::debug!("Command: {}", cmd);
     let args = ns.exec_args(&opts.working_dir, script_path);
@@ -192,69 +192,6 @@ fn start_namespace(
         exec_terminal(&opts.terminal, &opts.terminal_args, &cmd, &args)
     }
     .context(format!("Starting namespace {}", ns_name))
-}
-
-fn configure_namespace(opts: &Options, ns: &crate::vde::Namespace) -> Result<()> {
-    log::trace!("Configuring namespace");
-    // Need to configure the namespace
-    let ns_name = ns.get_name();
-
-    thread::sleep(std::time::Duration::new(1, 0));
-    // The following format i choosen by the ns_starter.sh script
-    let pid = fs::read_to_string(&ns.pid_path(&opts.working_dir))
-        .context(format!("Reading pid file for {}", ns.get_name()))?
-        .trim()
-        .parse()
-        .unwrap();
-
-    let cmd = ns.exec_command_command();
-    let ns_exec = |command: &str| -> Result<()> {
-        let mut args = command
-            .split_whitespace()
-            .map(|s| s.to_owned())
-            .collect::<Vec<String>>();
-
-        let args = ns.exec_command_args(&opts.working_dir, pid, args.as_mut());
-
-        exec(&cmd, &args)
-    };
-
-    // Bringing lo up
-    let command = "ip link set lo up";
-    log::debug!("Configuring namespace. command: {command}, interface: lo ns: {ns_name}");
-
-    ns_exec(&command).context(format!(
-        "Executing command '{command}' on interface lo on {ns_name}"
-    ))?;
-    thread::sleep(std::time::Duration::from_millis(100));
-
-    for (i, el) in ns.get_interfaces().iter().enumerate() {
-        let interface_name = el.get_name();
-
-        let mut v = vec![format!("ip link set vde{} name {}", i, interface_name)];
-        let ip = el.get_ip();
-        if let Some(ip) = ip {
-            v.push(format!("ip addr add {} dev {}", ip, interface_name));
-        }
-        v.push(format!("ip link set {} up", interface_name));
-
-        for command in v {
-            log::debug!(
-                "Configuring namespace. command: {}, interface: {}, ns: {}",
-                command,
-                interface_name,
-                ns_name
-            );
-
-            ns_exec(&command).context(format!(
-                "Executing command '{}' on interface {} on {}",
-                command, interface_name, ns_name
-            ))?;
-            thread::sleep(std::time::Duration::from_millis(100));
-        }
-    }
-
-    Ok(())
 }
 
 fn start_cable(opts: &Options, cable: &crate::vde::Cable) -> Result<()> {

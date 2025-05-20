@@ -24,7 +24,6 @@ pub struct Switch {
 pub struct Namespace {
     pub name: String,
     pub interfaces: Vec<NSInterface>,
-    commands: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

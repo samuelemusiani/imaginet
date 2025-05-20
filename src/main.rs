@@ -479,6 +479,12 @@ fn config_to_vde_topology(c: config::Config) -> Result<vde::Topology> {
                 let ni = vde::NSInterface::new(i.name.clone(), i.ip.clone());
                 n.add_interface(ni);
             }
+            for c in vde::Namespace::default_confing() {
+                n.add_config(c);
+            }
+            for c in n.config_for_interfaces() {
+                n.add_config(c);
+            }
             t.add_namespace(n).context("Adding namespace to topology")?;
         }
     }

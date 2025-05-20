@@ -10,6 +10,7 @@ mod namespace;
 mod switch;
 
 const PID_FILE_NAME: &str = "pid";
+const CONF_FILE_NAME: &str = "config";
 const MGMT_FILE_NAME: &str = "mgmt";
 const SOCK_FILE_NAME: &str = "sock";
 

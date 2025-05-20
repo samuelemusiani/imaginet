@@ -8,8 +8,6 @@ Stop non controlla se la roba si ferma realmente.
 
 Completare la modalità verbosa in tutto il codice (-v -vv -vvv) per debuggare.
 
-vdens in background? In modo da poter eseguire anche su macchine remote.
-
 Fare in modo che tutto possa essere configurabile da file: inline dei comandi
 di configurazione sia per switch che ns, ecc. Per vdens si può fare post-up, pre-up ad interfaccia
 

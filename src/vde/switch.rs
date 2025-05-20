@@ -1,4 +1,4 @@
-use super::{MGMT_FILE_NAME, PID_FILE_NAME, SOCK_FILE_NAME};
+use super::{CONF_FILE_NAME, MGMT_FILE_NAME, PID_FILE_NAME, SOCK_FILE_NAME};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -102,7 +102,7 @@ impl Switch {
 
     pub fn config_path(&self, base: &str) -> String {
         PathBuf::from(self.base_path(base))
-            .join("config")
+            .join(CONF_FILE_NAME)
             .to_str()
             .unwrap()
             .to_owned()
