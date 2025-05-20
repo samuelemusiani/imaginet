@@ -38,12 +38,16 @@ pub fn topology_exists(opts: &Options) -> bool {
 }
 
 /// If None is provided as devices, all devices are started
-pub fn topology_start(opts: Options, devices: Option<Vec<String>>) -> Result<()> {
+pub fn topology_start(opts: Options, devices: Option<Vec<String>>, inline: bool) -> Result<()> {
     log::debug!("Starting the topology");
-    log::debug!("opts: {:?} devices: {:?}", opts, devices);
+    log::debug!("opts: {:?} devices: {:?} inline {inline}", opts, devices);
     let t = get_topology(&opts).context("Gettin topology")?;
 
     let devices = devices.unwrap_or(vec![]);
+
+    if inline && (devices.len() > 1 || devices.len() == 0) {
+        bail!("If the flag inline is specified you must pass only one device");
+    }
 
     // Check if all the device provided are in the topology
     for d in &devices {
@@ -92,8 +96,17 @@ pub fn topology_start(opts: Options, devices: Option<Vec<String>>) -> Result<()>
             continue;
         }
 
-        start_namespace(&opts, ns, &script_path)?;
-        configure_namespace(&opts, ns)?;
+        if inline {
+            log::warn!(
+                "Configuration of namespace is not possible if inline is specified. Skippin..."
+            );
+        }
+
+        start_namespace(&opts, ns, &script_path, inline)?;
+        // For now, if inline is specified, configuration is not possible
+        if !inline {
+            configure_namespace(&opts, ns)?;
+        }
     }
 
     log::trace!("Starting cables");
@@ -113,7 +126,17 @@ pub fn topology_start(opts: Options, devices: Option<Vec<String>>) -> Result<()>
 
         init_dir(conn.base_path(&opts.working_dir))
             .context(format!("Initializing base dir for {}", conn.name))?;
+
+        if !conn.wirefilter && inline {
+            bail!("Can't start cable inline if wirefilter is not specified")
+        }
+
         start_cable(&opts, conn)?;
+    }
+
+    if inline {
+        thread::sleep(std::time::Duration::new(1, 0));
+        topology_attach(opts, devices[0].clone(), true)?;
     }
 
     Ok(())
@@ -143,7 +166,12 @@ fn start_switch(opts: &Options, sw: &crate::vde::Switch) -> Result<()> {
     exec(&cmd, &args).context(format!("Starting switch {}", sw_name))
 }
 
-fn start_namespace(opts: &Options, ns: &crate::vde::Namespace, script_path: &str) -> Result<()> {
+fn start_namespace(
+    opts: &Options,
+    ns: &crate::vde::Namespace,
+    script_path: &str,
+    inline: bool,
+) -> Result<()> {
     let ns_name = ns.get_name();
     log::trace!("Starting namespace {}", ns_name);
     init_dir(ns.base_path(&opts.working_dir))
@@ -154,12 +182,16 @@ fn start_namespace(opts: &Options, ns: &crate::vde::Namespace, script_path: &str
     let args = ns.exec_args(&opts.working_dir, script_path);
     log::debug!("Args: {:?}", args);
 
-    // Namespaces need to be started in a new terminal
-
-    log::debug!("Terminal: {}", opts.terminal);
-    log::debug!("Terminal args: {:?}", opts.terminal_args);
-    exec_terminal(&opts.terminal, &opts.terminal_args, &cmd, &args)
-        .context(format!("Starting namespace {}", ns_name))
+    if inline {
+        // Start namespace in the current terminal
+        exec_inline(&cmd, &args)
+    } else {
+        // Namespaces need to be started in a new terminal
+        log::debug!("Terminal: {}", opts.terminal);
+        log::debug!("Terminal args: {:?}", opts.terminal_args);
+        exec_terminal(&opts.terminal, &opts.terminal_args, &cmd, &args)
+    }
+    .context(format!("Starting namespace {}", ns_name))
 }
 
 fn configure_namespace(opts: &Options, ns: &crate::vde::Namespace) -> Result<()> {
@@ -225,21 +257,21 @@ fn configure_namespace(opts: &Options, ns: &crate::vde::Namespace) -> Result<()>
     Ok(())
 }
 
-fn start_cable(opts: &Options, conn: &crate::vde::Cable) -> Result<()> {
-    log::trace!("Starting cable {}", conn.get_name());
-    let cmd = conn.exec_command();
-    let args = conn.exec_args(&opts.working_dir);
+fn start_cable(opts: &Options, cable: &crate::vde::Cable) -> Result<()> {
+    log::trace!("Starting cable {}", cable.get_name());
+    let cmd = cable.exec_command();
+    let args = cable.exec_args(&opts.working_dir);
 
-    if conn.needs_config() {
-        log::trace!("Configuring cable {}", conn.get_name());
-        let config = conn.get_config();
-        let path = conn.config_path(&opts.working_dir);
+    if cable.needs_config() {
+        log::trace!("Configuring cable {}", cable.get_name());
+        let config = cable.get_config();
+        let path = cable.config_path(&opts.working_dir);
         fs::write(&path, config.join("\n"))
-            .context(format!("Writing config file for {}", conn.name))?;
+            .context(format!("Writing config file for {}", cable.name))?;
     }
 
     log::debug!("Executing {cmd} {:?}", args);
-    exec(&cmd, &args).context(format!("Starting cable {}", conn.name))
+    exec(&cmd, &args).context(format!("Starting cable {}", cable.name))
 }
 
 fn init(opts: &Options) -> Result<()> {

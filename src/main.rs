@@ -96,6 +96,15 @@ enum Commands {
 
     #[command(about = "Start devices in the current topology")]
     Start {
+        #[arg(
+            short,
+            long,
+            help = r#"Start inline: do not open a new terminal and start/attach to the
+process in the current one. If this option is specified you must
+pass only a single device "#
+        )]
+        inline: bool,
+
         /// List of device names to start
         devices: Option<Vec<String>>,
     },
@@ -272,7 +281,7 @@ fn main() -> Result<()> {
                 );
             }
             Commands::Import { config, force } => topology_import(opts, config, force)?,
-            Commands::Start { devices } => executor::topology_start(opts, devices)?,
+            Commands::Start { devices, inline } => executor::topology_start(opts, devices, inline)?,
             Commands::Status { devices, verbose } => {
                 executor::topology_status(opts, devices, verbose)?
             }

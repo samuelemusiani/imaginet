@@ -4,8 +4,6 @@ vde_plug ptp:///path1 ptp:///path2  se si stacca un ptp si chiude il plug. È co
  
 Il comando stop dovrebbe chiudere dolcemente tutto senza killare il pid :)
 
-Start inline per i namespaces
-
 Stop non controlla se la roba si ferma realmente.
 
 Completare la modalità verbosa in tutto il codice (-v -vv -vvv) per debuggare.
