@@ -37,6 +37,8 @@ The executable will be in `target/release/`.
 > [!IMPORTANT]
 > To be able to successfuly use ImagiNet you must install [vde-2](https://github.com/virtualsquare/vde-2),
 > [vdeplug4](https://github.com/rd235/vdeplug4) and [vdens](https://github.com/rd235/vdens).
+> You must also install vdeplug4 **after** vde-2, because the vde_plug executable
+> provided by vde-2 must be overwritten by the new version provided by vdeplug4.
 
 ImagiNet provides a very helpful command line interface. Simply run:
 ```
@@ -229,6 +231,8 @@ any errors are printed. It could be helpful to run the command without the
 `--daemon` argument to see the output of the switch.
 
 ### Cable not starting
+
+TODO
 
 ## Internals
 
