@@ -1,64 +1,52 @@
-# Thy file will create 4 namespace where ns1 and ns2 are in the VLAN 10 and
-# ns3 and ns4 are in VLAN 20.
-# ns1 and ns2 should be able to communicate and ns3 and ns4 should be able to 
-# communicate. The two groups of namespaces should be isolated
+# This example show routing between two namespaces using another as a router
+# Tree namespaces are created. Two cables from the namespaces
+# to the third are created.
 
-switch:
-  - name: sw1
-    config: ./net01_sw.conf
+# To be able to make routing work you probably need to enable ip forwarding
+# on the "router" namespace. This can be done with the following command:
+#
+# /usr/sbin/sysctl -w net.ipv4.ip_forward=1
+#
+# This example show routing between two namespaces using another as a router
+# You should not need to run the command as root because inside the 
+# namespace you have all the needed capabilities
 
 namespace:
   - name: ns1
     interfaces: 
       - name: eth0
         ip: 10.0.0.1/24
+        gateway: 10.0.0.254
 
   - name: ns2
     interfaces:
       - name: eth0
-        ip: 10.0.0.2/24
+        ip: 192.168.1.1/24
+        gateway: 192.168.1.254
 
-  - name: ns3
-    interfaces: 
-      - name: eth0
-        ip: 10.0.1.1/24
-
-  - name: ns4
+  - name: router
     interfaces:
       - name: eth0
-        ip: 10.0.1.2/24
+        ip: 10.0.0.254/24
 
+      - name: eth1
+        ip: 192.168.1.254/24
+
+# Cables are like real ethernet cables
 cable:
+    # Every cable have a name that must be unique
   - name: conn1
     endpoint_a:
       name: ns1
       port: eth0
     endpoint_b:
-      # For switches the port must be a string 
-      name: sw1
-      port: "1"
+      name: router
+      port: eth0
 
   - name: conn2
     endpoint_a:
       name: ns2
       port: eth0
     endpoint_b:
-      name: sw1
-      port: "2"
-
-  - name: conn3
-    endpoint_a:
-      name: ns3
-      port: eth0
-    endpoint_b:
-      # For switches the port must be a string 
-      name: sw1
-      port: "3"
-
-  - name: conn4
-    endpoint_a:
-      name: ns4
-      port: eth0
-    endpoint_b:
-      name: sw1
-      port: "4"
+      name: router
+      port: eth1
