@@ -1,0 +1,62 @@
+# Description:
+#  This example shows a simple routing between two namespaces using another as 
+#  a router. The end goal is to be able to ping between the two namespaces in
+#  different networks.
+#
+# What to learn:
+#  In this lab you will learn how to configure the most simple router
+#
+# What to do:
+#  In this case the ip addresses are already configured in the namespaces.
+#  You should only configure the default route for ns1 and ns2. This can be
+#  done with the following command:
+#
+#     ip route add default via <ip address> dev <interface>
+#
+#  For the first namespace the command would be:
+#
+#     ip route add default via 10.0.0.254 dev eth0
+# 
+#  To be able to make routing works you probably need to enable ip forwarding
+#  on the "router" namespace. This can be done with the following command:
+#
+#  /usr/sbin/sysctl -w net.ipv4.ip_forward=1
+#
+#  Now you should be able to ping between the two namespaces.
+
+namespace:
+  - name: ns1
+    interfaces: 
+      - name: eth0
+        # You can assign an ip address to the interface in the namespace
+        ip: 10.0.0.1/24
+
+  - name: ns2
+    interfaces:
+      - name: eth0
+        ip: 192.168.1.1/24
+
+  - name: router
+    interfaces:
+      - name: eth0
+        ip: 10.0.0.254/24
+
+      - name: eth1
+        ip: 192.168.1.254/24
+
+cable:
+  - name: conn1
+    endpoint_a:
+      name: ns1
+      port: eth0
+    endpoint_b:
+      name: router
+      port: eth0
+
+  - name: conn2
+    endpoint_a:
+      name: ns2
+      port: eth0
+    endpoint_b:
+      name: router
+      port: eth1
