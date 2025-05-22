@@ -1,0 +1,61 @@
+# Description:
+#  This is a simple example of a network with two namespaces.
+#  You can think of if as just to generic Linux PCs connected to each other.
+#  The end goal is to be able to ping between the two namespaces.
+#
+# What to learn:
+#  In this lab you will learn how to configure and ip address on Linux interface.
+#
+# What to do:
+#  First you should chose a network that you want to use between the two 
+#  namespaces. For example 10.0.0.0/24 is a good choice.
+#  Then you should pick two ip addresses from the network to assign to the two
+#  namespaces. We can use 10.0.0.1 for the first namespace and 10.0.0.2 for the
+#  second one.
+# 
+#  To assign an ip address to an interface you can use the following command:
+# 
+#     ip address add <ip address> dev <interface>
+#
+#  For the first interface the command would be:
+#
+#     ip address add 10.0.0.1/24 dev eth0
+#
+#  After adding the ip address to the second namespace you should be able to 
+#  ping between the two namespaces.
+#
+#  So you should see something like this:
+#
+#   user@ns1 $ ping 10.0.0.2
+#   PING 10.0.0.2 (10.0.0.2) 56(84) bytes of data.
+#   64 bytes from 10.0.0.2: icmp_seq=1 ttl=64 time=0.748 ms
+#   64 bytes from 10.0.0.2: icmp_seq=2 ttl=64 time=0.515 ms
+#   ^C
+#   --- 10.0.0.2 ping statistics ---
+#   2 packets transmitted, 2 received, 0% packet loss, time 1020ms
+#   rtt min/avg/max/mdev = 0.515/0.631/0.748/0.116 ms
+
+namespace:
+  # This is the first namespace
+  - name: ns1
+    # A list of interfaces for the namespace. Ony one is specified here
+    interfaces: 
+      # The name of the interface
+      - name: eth0
+
+  - name: ns2
+    interfaces:
+      - name: eth0
+
+# Cables are like real ethernet cables
+cable:
+    # Every cable has a name that must be unique
+  - name: conn1
+    endpoint_a:
+      name: ns1
+      # For namespaces the port is the name of the interface and must be
+      # specified
+      port: eth0
+    endpoint_b:
+      name: ns2
+      port: eth0
