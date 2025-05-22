@@ -20,6 +20,10 @@ designed to create the most efficient topology.
 - [Terminal configuration](#terminal-configuration)
 - [Examples](#examples)
 - [Wireshark](#wireshark)
+- [Life of a](#life-of-a)
+    - [Namespace](#namespace)
+    - [Switch](#switch)
+    - [Cable](#cable)
 - [Troubleshooting](#troubleshooting)
     - [Namespace not starting](#namespace-not-starting)
     - [Switch not starting](#switch-not-starting)
@@ -159,6 +163,35 @@ To analyze traffic from more than two devices, you can start multiple istances o
 you can use a switch configured as a hub. The switch will forward all the traffic
 to all the ports, so you can analyze the traffic from all the devices connected
 by looking only at one of them.
+
+## Life of a
+
+Every device have a different life cycle. Unlike something like GNS3, ImagiNet
+DOES NOT save the state of the devices. This means that every time you start a 
+device it will start from scratch. So be really careful when you are stopping a
+device. If you need to save a particular configuration, write the commands 
+somewhere safe.
+
+### Namespace
+
+Namespaces are alive as long as at least one process is running inside them.
+When you start a namespace, it will start a shell inside it. If you execute a
+command inside the namespace, the command will keep the namespace alive.
+
+The namespace will be stopped once every process inside it is stopped.
+
+### Switch
+
+Switches are alive as long as the process is running. When you start a switch,
+it will start the process in the background that will keep the switch alive.
+
+If you enter the switch and type `shutdown`, the switch will be stopped.
+
+### Cable
+
+If a cable have wirefilter is able to stay "alive" even if both ends are 
+disconnected. If wirefilter is not set, the cable will be stopped when one of 
+the ends is disconnected.
 
 ## Troubleshooting
 
