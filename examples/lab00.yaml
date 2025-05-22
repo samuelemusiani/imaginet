@@ -1,6 +1,6 @@
 # Description:
 #  This is a simple example of a network with two namespaces.
-#  You can think of if as just to generic Linux PCs connected to each other.
+#  You can think of if as just two generic Linux PCs connected to each other.
 #  The end goal is to be able to ping between the two namespaces.
 #
 # What to learn:

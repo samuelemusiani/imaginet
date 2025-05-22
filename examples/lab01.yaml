@@ -1,0 +1,82 @@
+# Description:
+#  This is a simple example of a network with tree namespaces and a switch.
+#  You can think of if as just three generic Linux PCs connected to simple switch.
+#  The end goal is to be able to ping between all the namespaces.
+#
+# What to learn:
+#  In this lab you will learn how a switch is able to forward frames based on
+#  the destination mac adress
+#
+# What to do:
+#  Chose a network that you want to use. For example 10.0.0.0/24.
+#  Chose three addresses from the network for the namespace. For example
+#  n1 -> 10.0.0.1
+#  n2 -> 10.0.0.2
+#  n3 -> 10.0.0.3
+#
+#  You should be able to ping every namespace from every other namespace.
+#  
+#  Switches are able to learn the mac address of the devices connected to them,
+#  and if they need to forward a frame to a device that they know is connected to
+#  a specific port they will forward the frame ONLY to that port. So if you
+#  start wireshark in the second namespace and from the first namespace you ping
+#  the third namespace you shouldn't be able to see the pings.
+#  But you will probably see the ARP requests from the first namespace. This is
+#  because the ARP request is a broadcast frame and the switch will forward it to
+#  all the interfaces. If you don't see the ARP request in wireshark you can
+#  force a new ARP by running the following command in the first or third 
+#  namespace:
+#
+#     ip neighbour flush dev eth0
+#
+#  This will remove the ARP cache and force a new ARP request.
+#
+#  On the other hand if you start wireshark in the first namespace and start the
+#  ping again you will see every ICMP packet.
+
+switch:
+  # This is the most simple switch you can have
+  - name: sw1
+
+# Create three namespaces without any additional configuration
+namespace:
+  - name: ns1
+    interfaces: 
+      - name: eth0
+
+  - name: ns2
+    interfaces:
+      - name: eth0
+
+  - name: ns3
+    interfaces:
+      - name: eth0
+
+# Connect namespaces to the switch
+cable:
+  - name: conn1
+    endpoint_a:
+      name: ns1
+      # For namespaces the port is the name of the interface and must be
+      # specified
+      port: eth0
+    endpoint_b:
+      # If you connect and andpoint to a switch you don't need to specify the port.
+      # The first available port will be used.
+      name: sw1
+
+  - name: conn2
+    endpoint_a:
+      name: ns2
+      port: eth0
+    endpoint_b:
+      name: sw1
+      # You can specify a port for the switch, but MUST be a string
+      port: "10"
+
+  - name: conn3
+    endpoint_a:
+      name: ns3
+      port: eth0
+    endpoint_b:
+      name: sw1
