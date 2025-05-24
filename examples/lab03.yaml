@@ -1,0 +1,109 @@
+# Description:
+#  This example shows a simple routing between two namespaces using another as 
+#  a router. The difference between this and the previous example is that
+#  the router has only one interface. This configuration is commonly known as
+#  router on a stick.
+#
+# What to learn:
+#  In this lab you will learn about vlans and how to configure a simple router
+#  that has the interfaces in different vlans.
+#
+# What to do:
+#  The first and the second namespace have already the ip and the default 
+#  gateway configured.
+#  ns1 is connected to the 1st port of the switch and
+#  ns2 is connected to the 2nd port of the switch.
+#  The router is connected to the switch on the 10th port.
+#
+#  To be able to make routing works you probably need to enable ip forwarding
+#  on the "router" namespace. This can be done with the following command:
+#
+#  /usr/sbin/sysctl -w net.ipv4.ip_forward=1
+#
+#  If you assign the ip 10.0.0.254 and 192.168.1.254 to the router's interface
+#  you should be able to ping between the two namespaces. But this is not the
+#  correct way to do it. In fact, with this configuration, there is no isolation
+#  between the two networks. If ns1 decides to change its ip address to an IP in
+#  the same network as ns2, it will be able to communicate with it without going
+#  through the router.
+#  !IMPORTANT! If you have done this test please restart the namespaces as Linux
+#  will cache that ns2 is reachable without going through the router and if you
+#  setup the vlans you will have some problems.
+#
+#  The correct way to do it is to use vlans. VLANs are used to isolate traffic
+#  between different networks even if they are connected to the same switch.
+#  You can pick any vlan id you want, but in this example it's recommended to use
+#  vlan id 10 for the first network and vlan id 20 for the second network.
+#  To configure the switch you need to attach to a terminal in the switch
+#  with the command:
+#
+#     imaginet attach sw1
+#
+#  With the help command you should be able to see how to configure the switch.
+#
+#  You have to mark the first and the second port of the switch as access ports
+#  (untagged) and assign them to the vlan 10 and 20 respectively. For the router
+#  you have to mark the 10th port as a trunk port (tagged) and allow the vlans 
+#  10 and 20.
+#  After you configure the switch you need to add two new interfaces to the router,
+#  but since these interfaces are in different vlans you need to do that inside
+#  the namespace. You can do that with the following commands:
+#
+#     ip link add link <interface> name <name> type vlan id <vlan>
+#
+#  For the name is common to use the format ethX.Y where X is the number of the
+#  interface and Y is the vlan id. For example, if you want to add an interface
+#  to the router in vlan 10 you can use the following command:
+#
+#     ip link add link eth0 name eth0.10 type vlan id 10
+#
+#  Then you need to assign an IP address to the new interfaces. And now the
+#  two namespaces should be able to communicate with each other through the
+#  router in an isolated way.
+
+switch:
+  - name: sw1
+
+namespace:
+  - name: ns1
+    interfaces: 
+      - name: eth0
+        ip: 10.0.0.1/24
+        # You can assign a default gateway to the interface
+        gateway: 10.0.0.254
+
+  - name: ns2
+    interfaces:
+      - name: eth0
+        ip: 192.168.1.1/24
+        gateway: 192.168.1.254
+
+  - name: router
+    interfaces:
+      - name: eth0
+
+cable:
+  - name: conn1
+    endpoint_a:
+      name: ns1
+      port: eth0
+    endpoint_b:
+      # You can specify a port for the switch, but it MUST be a string
+      port: "1"
+      name: sw1
+
+  - name: conn2
+    endpoint_a:
+      name: ns2
+      port: eth0
+    endpoint_b:
+      port: "2"
+      name: sw1
+
+  - name: conn3
+    endpoint_a:
+      name: router
+      port: eth0
+    endpoint_b:
+      port: "10"
+      name: sw1

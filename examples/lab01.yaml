@@ -71,7 +71,7 @@ cable:
       port: eth0
     endpoint_b:
       name: sw1
-      # You can specify a port for the switch, but MUST be a string
+      # You can specify a port for the switch, but it MUST be a string
       port: "10"
 
   - name: conn3
