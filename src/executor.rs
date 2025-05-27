@@ -207,7 +207,6 @@ fn start_cable(opts: &Options, cable: &crate::vde::Cable) -> Result<()> {
             .context(format!("Writing config file for {}", cable.name))?;
     }
 
-    log::debug!("Executing {cmd} {:?}", args);
     exec(&cmd, &args).context(format!("Starting cable {}", cable.name))
 }
 

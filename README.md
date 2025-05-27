@@ -296,7 +296,46 @@ any errors are printed. It could be helpful to run the command without the
 
 ### Cable not starting
 
-TODO
+There are two types of cables: the ones with wirefilter and the ones without.
+Let's start with the ones without wirefilter. Do you have vdeplug4 installed?
+```
+$ vde_plug
+```
+It's mandatory that the `vde_plug` executable is installed from vdeplug4 and not
+from vde-2. Please check the [Usage](#usage) section to see how to install.
+
+After you have verified that you have vdeplug4 installed, can you start a simple
+point-to-point cable?
+```
+$ vde_plug ptp:///tmp/ptp1
+```
+This command does not print anything, but it "hangs". This is normal.
+
+If you can successfully start the cable manually, you should try executing
+the start command provided by ImagiNet but with the verbose flags:
+```
+$ imaginet -vvv start conn1
+```
+This will print something like:
+```
+[DEBUG imaginet::executor] Executing vde_plug ["ptp:///tmp/imnet/./ns1/eth0", "ptp:///tmp/imnet/./ns2/eth0", "--pidfile", "/tmp/imnet/conn1/pid", "--descr", "conn1", "--daemon"]
+```
+You should try running the command manually and see if any errors are printed.
+
+#### Wirefilter
+
+In order to use wirefilter, you need to have the `dpipe` executable installed from the `vdeplug4` package.
+
+Wirefilter is an executable found in `vde-2`, you need to have this, too.
+For both of them if you execute the command without arguments you should see the 
+help message.
+
+The debug verbosity for the start command is always your friend. Something like
+the following is the command for a wirefilter cable, you should try running it
+manually and see if any errors are printed:
+```
+[DEBUG imaginet::executor] Executing: dpipe ["--daemon", "--pidfile", "/tmp/imnet/conn1/pid", "vde_plug", "ptp:///tmp/imnet/./ns1/eth0", "=", "wirefilter", "--mgmt", "/tmp/imnet/conn1/mgmt", "--rcfile", "/tmp/imnet/conn1/config", "=", "vde_plug", "ptp:///tmp/imnet/./ns2/eth0"]
+```
 
 ## Internals
 
