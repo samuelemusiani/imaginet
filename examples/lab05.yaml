@@ -41,7 +41,7 @@
 #  For example on r1 if you have chosed the previous network, the command is
 #  the follwing:
 #
-#     ip route add 192.168.1.1/24 via 172.16.0.2 dev eth1
+#     ip route add 192.168.1.0/24 via 172.16.0.2 dev eth1
 #
 #  After configuring r1 and r2 you should be able to ping between ns1 and ns2.
 
