@@ -69,14 +69,14 @@ namespace:
   - name: r1
     interfaces:
       - name: eth0
-        ip: 10.0.0.254
+        ip: 10.0.0.254/24
 
       - name: eth1
 
   - name: r2
     interfaces:
       - name: eth0
-        ip: 192.168.1.254
+        ip: 192.168.1.254/24
 
       - name: eth1
 
