@@ -23,3 +23,15 @@ jobs:
 
     - name: Test
       run: cargo test
+
+    - name: Test examples
+      run: |
+        for example in examples/*.yaml; do
+          echo "Testing $example"
+          cargo run --release -q -- create "$example"
+          if [ $? -ne 0 ]; then
+            echo "Failed to create example from $example"
+            exit 1
+          fi
+          cargo run --release -q -- clear
+        done
