@@ -45,6 +45,10 @@ The executable will be in `target/release/`.
 > [vdeplug4](https://github.com/rd235/vdeplug4) and [vdens](https://github.com/rd235/vdens).
 > You must also install vdeplug4 **after** vde-2, because the vde_plug executable
 > provided by vde-2 must be overwritten by the new version provided by vdeplug4.
+>
+> In order to make the `exec` command works for namespaces, you must also install 
+> the `nsenter` program present in the `util-linux` package. `nsenter` must be
+> at minimum version 2.40, but it is recommended to use the latest version available
 
 ImagiNet provides a very helpful command line interface. Simply run:
 ```
