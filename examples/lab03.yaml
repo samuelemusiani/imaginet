@@ -18,7 +18,7 @@
 #  To be able to make routing works you probably need to enable ip forwarding
 #  on the "router" namespace. This can be done with the following command:
 #
-#  /usr/sbin/sysctl -w net.ipv4.ip_forward=1
+#     /usr/sbin/sysctl -w net.ipv4.ip_forward=1
 #
 #  If you assign the ip 10.0.0.254 and 192.168.1.254 to the router's interface
 #  you should be able to ping between the two namespaces. But this is not the

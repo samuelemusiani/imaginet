@@ -1,0 +1,118 @@
+# Description:
+#  This example shows a simple example of static routing. In this case we have
+#  two switch and a namespace connected to each of them. Then we have other two
+#  namespaces. The last two namespaces are routers and are connected to one of
+#  the switches and to each other. The end goal is to be able to ping between the
+#  first two namespaces.
+#
+# What to learn:
+#  In this lab you will learn how to configure a router with static routing.
+#
+# What to do:
+#  Let's start naming things to avoid confusion. We will have two switches: sw1
+#  and sw2. Then we have two PCs: ns1 and ns2. And to finish we have two routers:
+#  r1 and r2.
+#
+#  The first switch is connected to ns1 and r1. The second switch is connected
+#  to ns2 and r2. The two routers are connected to each other.
+#
+#  After configuring static routing on r1 and r2 you should be able to ping
+#  between ns1 and ns2.
+#
+#  ns1 and ns2 are already configured with the ip address and the default gateway.
+#  r1 and r2 are partially configured, you need to decide a new network for
+#  the communication between the two routers and assign ip addresses to the
+#  eth1 interfaces of r1 and r2.
+#  For example you can chose 172.16.0.0/30 and assign the following ip addresses:
+#  r1: 172.16.0.1/30
+#  r2: 172.16.0.2/30
+#
+#  Then you need to enable ip forwarding on both routers. This can be done with the
+#  following command:
+#
+#     /usr/sbin/sysctl -w net.ipv4.ip_forward=1
+#
+#  After that you need to add static routes on both routers. On r1 you need to
+#  add a route to the network of ns2 via r2, and on r2 you need to add a route
+#  to the network of ns1 via r1. The commands for that is:
+#
+#     ip route add <destination network> via <next hop> dev <interface>
+#
+#  For example on r1 if you have chosed the previous network, the command is
+#  the follwing:
+#
+#     ip route add 192.168.1.1/24 via 172.16.0.2 dev eth1
+#
+#  After configuring r1 and r2 you should be able to ping between ns1 and ns2.
+
+switch:
+  - name: sw1
+    # You can specify how many ports the switch has. The default is 32.
+    port: 8
+
+  - name: sw2
+    port: 4
+
+namespace:
+  - name: ns1
+    interfaces: 
+      - name: eth0
+        ip: 10.0.0.1/24
+        gateway: 10.0.0.254
+
+  - name: ns2
+    interfaces:
+      - name: eth0
+        ip: 192.168.1.1/24
+        gateway: 192.168.1.254
+
+  - name: r1
+    interfaces:
+      - name: eth0
+        ip: 10.0.0.254
+
+      - name: eth1
+
+  - name: r2
+    interfaces:
+      - name: eth0
+        ip: 192.168.1.254
+
+      - name: eth1
+
+cable:
+  - name: conn1
+    endpoint_a:
+      name: ns1
+      port: eth0
+    endpoint_b:
+      name: sw1
+
+  - name: conn2
+    endpoint_a:
+      name: ns2
+      port: eth0
+    endpoint_b:
+      name: sw2
+
+  - name: conn3
+    endpoint_a:
+      name: r1
+      port: eth0
+    endpoint_b:
+      name: sw1
+
+  - name: conn4
+    endpoint_a:
+      name: r2
+      port: eth0
+    endpoint_b:
+      name: sw2
+
+  - name: conn5
+    endpoint_a:
+      name: r1
+      port: eth1
+    endpoint_b:
+      name: r2
+      port: eth1
