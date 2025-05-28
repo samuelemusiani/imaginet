@@ -41,7 +41,7 @@ impl Namespace {
         self.interfaces.push(interface);
     }
 
-    pub fn default_confing() -> Vec<String> {
+    pub fn default_config() -> Vec<String> {
         vec!["ip link set lo up\n".to_owned()]
     }
 

@@ -300,6 +300,13 @@ fn main() -> Result<()> {
                             ns.add_interface(ni);
                         }
 
+                        for c in vde::Namespace::default_config() {
+                            ns.add_config(c);
+                        }
+                        for c in ns.config_for_interfaces() {
+                            ns.add_config(c);
+                        }
+
                         t.add_namespace(ns)
                             .context("Adding namespace to topology")?;
                     }
@@ -479,7 +486,7 @@ fn config_to_vde_topology(c: config::Config) -> Result<vde::Topology> {
                 let ni = vde::NSInterface::new(i.name.clone(), i.ip.clone(), i.gateway.clone());
                 n.add_interface(ni);
             }
-            for c in vde::Namespace::default_confing() {
+            for c in vde::Namespace::default_config() {
                 n.add_config(c);
             }
             for c in n.config_for_interfaces() {
