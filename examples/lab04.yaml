@@ -1,0 +1,64 @@
+# Description:
+#  This is an example of a wirefilter cable.
+#  The topoly is very simple as only two namespaces are connected to each other.
+#  The end goal is to understand how different protocols react to different 
+#  problems that occur in the network.
+#
+# What to learn:
+#  In this lab you will learn different protocols behave when facing different 
+#  problems on the network.
+#  
+#
+# What to do:
+#  As in the first lab you should chose a network that you want to use and
+#  assign ip addresses to the two namespaces. Then test that you can communicate
+#  between the two namespaces.
+#
+#  The you can attach to the wirefilter cable with the command:
+#       
+#     imaginet attach conn1
+#
+#  This should open a new terminal window with the wirefilter console. There
+#  you can change varius parameters of the cable and see how it affects the
+#  communication between the two namespaces.
+#
+#  For example iperf3 is a good tool to test the bandwidth between the two
+#  namespaces. You can run it in one namespace with the command:
+#
+#     iperf3 -s
+#
+#  And in the other one with the command:
+#
+#     iperf3 -c <ip address of the first namespace> -t 1000
+#
+#  Then you can start experimenting with the wirefilter console. For example you
+#  can change the loss rate of the cable to 5% and see how it affects the
+#  bandwidth. You can change the duplication rate, the delay, the noise and other
+#  things. Try experimenting with different values.
+#  Also don't stick with iperf3, but try other protocols like ICMP (ping).
+
+namespace:
+  # This is the first namespace
+  - name: ns1
+    # A list of interfaces for the namespace. Ony one is specified here
+    interfaces: 
+      # The name of the interface
+      - name: eth0
+
+  - name: ns2
+    interfaces:
+      - name: eth0
+
+# Cables are like real ethernet cables
+cable:
+    # Every cable has a name that must be unique
+  - name: conn1
+    endpoint_a:
+      name: ns1
+      # For namespaces the port is the name of the interface and must be
+      # specified
+      port: eth0
+    endpoint_b:
+      name: ns2
+      port: eth0
+    wirefilter: true
