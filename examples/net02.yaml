@@ -5,7 +5,7 @@
 
 switch:
   - name: sw1
-    config: ./net01_sw.conf
+    config: ./net02_sw.conf
 
 namespace:
   - name: ns1
