@@ -178,22 +178,24 @@ somewhere safe.
 
 ### Namespace
 
-Namespaces are alive as long as at least one process is running inside them.
+Namespaces are active as long as at least one process is running inside them.
 When you start a namespace, it will start a shell inside it. If you execute a
-command inside the namespace, the command will keep the namespace alive.
-
-The namespace will be stopped once every process inside it is stopped.
+command inside the namespace, the command will keep the namespace active. The 
+namespace will be stopped once every process inside it is stopped.
+BUT as soon as the first process inside the namespace is stopped, all the
+network interfaces inside the namespace will be removed. In this case the
+namespace is in a inconsistent state and should be restarted.
 
 ### Switch
 
-Switches are alive as long as the process is running. When you start a switch,
-it will start the process in the background that will keep the switch alive.
+Switches are active as long as the process is running. When you start a switch,
+it will start the process in the background that will keep the switch active.
 
 If you enter the switch and type `shutdown`, the switch will be stopped.
 
 ### Cable
 
-If a cable have wirefilter is able to stay "alive" even if both ends are 
+If a cable have wirefilter is able to stay "active" even if both ends are 
 disconnected. If wirefilter is not set, the cable will be stopped when one of 
 the ends is disconnected.
 
@@ -228,7 +230,7 @@ You should now see a single namespace with the `status` command:
 $ imaginet status
 Topology status
 Namespaces:
-- ns1 dead
+- ns1 inactive
 
 Switches:
 
@@ -283,7 +285,7 @@ Topology status
 Namespaces:
 
 Switches:
-- sw1 dead
+- sw1 inactive
 
 Cables:
 $ imaginet -vvv start sw1

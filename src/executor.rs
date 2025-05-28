@@ -4,7 +4,7 @@ use std::io::Write;
 use std::os::unix::{fs::PermissionsExt, process::CommandExt}; // Used for exec(), and permissions set on the namespace starter script
 use std::{fs, process, thread};
 
-const ERR_DEAD_DEVICE: &str = "Device not alive";
+const ERR_DEAD_DEVICE: &str = "Device not active";
 
 #[derive(Clone, Debug)]
 pub struct Options {
@@ -302,9 +302,9 @@ pub fn topology_status(opts: Options, devices: Option<Vec<String>>, verbose: u8)
 
         let path = n.pid_path(&opts.working_dir);
         let status = if pid_path_is_alive(&path)? {
-            "alive".green()
+            "active".green()
         } else {
-            "dead".red()
+            "inactive".red()
         };
 
         println!("- {} {}", n.get_name(), status);
@@ -336,9 +336,9 @@ pub fn topology_status(opts: Options, devices: Option<Vec<String>>, verbose: u8)
 
         let path = s.pid_path(&opts.working_dir);
         let status = if pid_path_is_alive(&path)? {
-            "alive".green()
+            "active".green()
         } else {
-            "dead".red()
+            "inactive".red()
         };
 
         println!("- {} {}", s.get_name(), status);
@@ -369,9 +369,9 @@ pub fn topology_status(opts: Options, devices: Option<Vec<String>>, verbose: u8)
 
         let path = conn.pid_path(&opts.working_dir);
         let status = if pid_path_is_alive(&path)? {
-            "alive".green()
+            "active".green()
         } else {
-            "dead".red()
+            "inactive".red()
         };
         println!("- {} {}", conn.name, status);
         if verbose > 0 {
