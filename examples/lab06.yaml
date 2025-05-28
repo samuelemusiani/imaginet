@@ -1,0 +1,116 @@
+# Description:
+#  This example shows a more sophisticated example vlans. In this case we have
+#  two switches and 2 namespaces connected to each of them. Namespaces are
+#  called ns1, ns2, ns3 and ns4. ns1 and ns2 are connected to sw1, and
+#  ns3 and ns4 are connected to sw2. ns1 needs to be in the same boradcast
+#  domain as ns3, and ns2 needs to be in the same broadcast domain as ns4.
+#  There is also a router called r1 connected to sw2. The goal is to be able
+#  to ping from one namespace to the all the others.
+#
+# What to learn:
+#  In this lab you will learn how to configure vlans on multiple switches.
+#
+# What to do:
+#  First of all, you need to configure the second switch. The first switch
+#  is already configured. You can check the config on sw1 by attaching to it
+#  and using the `vlan/allprint` command.
+#  You should see that sw1 has two vlans: vlan 10 and vlan 20. The first
+#  port is untagged in vlan 10 (where ns1 is connected) and the second port is 
+#  untagged in vlan 20 (where ns2 is connected). The 7th port is tagged in both 
+#  vlans and is connected to sw2.
+#
+#  You should attach to sw2 and configure it in a similar way. The first port
+#  should be untagged in vlan 10 (where ns3 is connected) and the second port
+#  should be untagged in vlan 20 (where ns4 is connected). The 3rd port should
+#  be tagged in both vlans and is connected to r1. The 7th port should be
+#  tagged in both vlans and is connected to sw1.
+#
+#  Now you need to configure the ips on all the namespaces. Chose a network for
+#  every each vlan. The configure the ips in the namespaces. If everything is
+#  configured correctly you should be able to ping between ns1 and ns3, and 
+#  between ns2 and ns4.
+#
+#  To be able to ping between namespaces in different vlans you need to con
+#  the router r1. You need to create virtual interfaces in r1 for each vlan,
+#  add an ip address to each interface and enable ip forwarding. Then you
+#  need to add a default route in each namespace pointing to the router.
+#  Then you should be able to ping between all the namespaces.
+
+switch:
+  - name: sw1
+    ports: 8
+    # You can configure a switch with an external file
+    config: lab06_sw1.conf
+
+  - name: sw2
+    ports: 8
+
+namespace:
+  - name: ns1
+    interfaces:
+      - name: eth0
+
+  - name: ns2
+    interfaces:
+      - name: eth0
+
+  - name: ns3
+    interfaces:
+      - name: eth0
+
+  - name: ns4
+    interfaces:
+      - name: eth0
+
+  - name: r1
+    interfaces:
+      - name: eth0
+
+cable:
+  - name: conn1
+    endpoint_a:
+      name: ns1
+      port: eth0
+    endpoint_b:
+      name: sw1
+      port: "1"
+
+  - name: conn2
+    endpoint_a:
+      name: ns2
+      port: eth0
+    endpoint_b:
+      name: sw1
+      port: "2"
+
+  - name: conn3
+    endpoint_a:
+      name: ns3
+      port: eth0
+    endpoint_b:
+      name: sw2
+      port: "1"
+
+  - name: conn4
+    endpoint_a:
+      name: ns4
+      port: eth0
+    endpoint_b:
+      name: sw2
+      port: "2"
+
+  - name: conn5
+    endpoint_a:
+      name: r1
+      port: eth0
+    endpoint_b:
+      name: sw2
+      port: "3"
+
+  - name: conn6
+    endpoint_a:
+      name: sw1
+      port: "7"
+    endpoint_b:
+      name: sw2
+      port: "7"
