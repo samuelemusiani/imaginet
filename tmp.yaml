@@ -1,0 +1,62 @@
+switch:
+  - name: sw1
+    unmanaged: true # Use vde_plug switch
+    # hub: true -> deprecated
+
+hub:
+  - name: hub1 # Use vde_plug hub
+
+namespace:
+  - name: ns1
+    interfaces:
+      - name: eth0
+
+  - name: ns2
+    interfaces:
+      - name: eth0
+
+cable:
+  - name: conn1
+    endpoint_a:
+      name: ns1
+      port: eth0
+    endpoint_b:
+      name: sw1
+      port: "1"
+
+  - name: conn2
+    endpoint_a:
+      name: ns2
+      port: eth0
+    endpoint_b:
+      name: sw1
+      port: "2"
+
+
+# It's better to create a FAKE cable and if the endpoint is vxvde or slirp
+# just use them instead of a ptp? But then the cables is responsible for
+# the end connection. Use a performance flag?
+  - name: conn3
+    endpoint_a:
+      name: sw1
+    endpoint_b:
+      name: vxvde1
+
+# Mi piacerebbe chiedere il permesso di root solo se necessario. Da gestire.
+# Magari si hanno già le capabilities necessarie senza root.
+tap:
+  - name: tap1
+
+# Only the ip address is specified
+vxvde:
+  - name: vxvde1
+    ip: 234.0.0.1
+
+# No arguments
+slirp:
+  - name: slirp1
+
+# Open are connections that are not managed by the system. For example you can
+# connect manually. This avoid imaginet to take care of vms
+open:
+  - name: open1
