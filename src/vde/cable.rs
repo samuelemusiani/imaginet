@@ -17,14 +17,17 @@ pub struct Endpoint {
     name: String,
     port: Option<String>,
     protocol: VdeConnProtocols,
+    /// Open flag to indicate if the endpoint is "open".
+    open: bool,
 }
 
 impl Endpoint {
-    pub fn new(name: String, port: Option<String>, protocol: VdeConnProtocols) -> Self {
+    pub fn new(name: String, port: Option<String>, protocol: VdeConnProtocols, open: bool) -> Self {
         Self {
             name,
             port,
             protocol,
+            open,
         }
     }
 
@@ -39,6 +42,10 @@ impl Endpoint {
     pub fn get_protocol(&self) -> &VdeConnProtocols {
         &self.protocol
     }
+
+    pub fn get_open(&self) -> bool {
+        self.open
+    }
 }
 
 impl Cable {
@@ -47,15 +54,17 @@ impl Cable {
         a: String,
         port_a: Option<String>,
         protocol_a: VdeConnProtocols,
+        open_a: bool,
         b: String,
         port_b: Option<String>,
         protocol_b: VdeConnProtocols,
+        open_b: bool,
         wirefilter: Option<bool>,
     ) -> Self {
         Self {
             name,
-            a: Endpoint::new(a, port_a, protocol_a),
-            b: Endpoint::new(b, port_b, protocol_b),
+            a: Endpoint::new(a, port_a, protocol_a, open_a),
+            b: Endpoint::new(b, port_b, protocol_b, open_b),
             wirefilter: wirefilter.unwrap_or(false),
             config: Vec::new(),
         }

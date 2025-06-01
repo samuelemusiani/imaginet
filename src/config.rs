@@ -10,6 +10,7 @@ const DEFAULT_SWITCH_PORTS: u32 = 32;
 pub struct Endpoint {
     pub name: String,
     pub port: Option<String>,
+    pub open: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -43,10 +44,16 @@ pub struct Cable {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct Open {
+    pub name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     pub switch: Option<Vec<Switch>>,
     pub namespace: Option<Vec<Namespace>>,
     pub cable: Option<Vec<Cable>>,
+    pub open: Option<Vec<Open>>,
 }
 
 impl Config {
@@ -161,6 +168,7 @@ impl Config {
                     Endpoint {
                         name: s.name.clone(),
                         port: Some(ports.to_string()),
+                        open: Some(false),
                     },
                 );
             }
@@ -176,6 +184,7 @@ impl Config {
                         Endpoint {
                             name: i.name.clone(),
                             port: Some(1.to_string()),
+                            open: Some(false),
                         },
                     );
                 }
@@ -245,10 +254,15 @@ impl Config {
 
         if let Some(con) = &self.cable {
             for c in con {
-                endpoint_check(c.endpoint_a.name.clone(), c.endpoint_a.port.as_ref())
-                    .context(format!("Checks failed for cable {} endpoint A", c.name))?;
-                endpoint_check(c.endpoint_b.name.clone(), c.endpoint_b.port.as_ref())
-                    .context(format!("Checks failed for cable {} endpoint B", c.name))?;
+                if !c.endpoint_a.open.unwrap_or(false) {
+                    endpoint_check(c.endpoint_a.name.clone(), c.endpoint_a.port.as_ref())
+                        .context(format!("Checks failed for cable {} endpoint A", c.name))?;
+                }
+
+                if !c.endpoint_b.open.unwrap_or(false) {
+                    endpoint_check(c.endpoint_b.name.clone(), c.endpoint_b.port.as_ref())
+                        .context(format!("Checks failed for cable {} endpoint B", c.name))?;
+                }
 
                 for edpt in vec![&c.endpoint_a, &c.endpoint_b] {
                     // If endpoint is a switch we add it to the used map. If the

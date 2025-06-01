@@ -13,6 +13,7 @@ const PID_FILE_NAME: &str = "pid";
 const CONF_FILE_NAME: &str = "config";
 const MGMT_FILE_NAME: &str = "mgmt";
 const SOCK_FILE_NAME: &str = "sock";
+pub const OPEN_DIR_NAME: &str = "opn";
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum VdeConnProtocols {
@@ -149,7 +150,16 @@ impl Topology {
     }
 }
 
-pub fn find_endpoint_path(t: &Topology, name: &str, port: Option<&String>) -> Result<String> {
+pub fn find_endpoint_path(
+    t: &Topology,
+    name: &str,
+    port: Option<&String>,
+    open: Option<bool>,
+) -> Result<String> {
+    if open == Some(true) {
+        return Ok(format!("{OPEN_DIR_NAME}/{name}"));
+    }
+
     for sw in t.get_switches() {
         if sw.get_name() == name {
             return Ok(sw.sock_path("."));

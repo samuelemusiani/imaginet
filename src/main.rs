@@ -4,6 +4,7 @@ use env_logger;
 use home;
 use log;
 use std::{fs, path::PathBuf, process, str::FromStr};
+use vde::VdeConnProtocols;
 
 mod config;
 mod executor;
@@ -164,11 +165,17 @@ enum AddSubcommands {
         #[arg(long, help = "Port number on endpoint A", value_name = "PORT")]
         port_a: Option<String>,
 
+        #[arg(long, help = "Open connection on endpoint A", value_name = "BOOL")]
+        open_a: Option<bool>,
+
         /// Name of the second endpoint
         b: String,
 
         #[arg(long, help = "Port number on endpoint A", value_name = "PORT")]
         port_b: Option<String>,
+
+        #[arg(long, help = "Open connection on endpoint B", value_name = "BOOL")]
+        open_b: Option<bool>,
 
         #[arg(short, long, help = "Make the cable with wirefilter", group = "wr")]
         wirefilter: bool,
@@ -337,34 +344,52 @@ fn main() -> Result<()> {
                         name,
                         a,
                         port_a,
+                        open_a,
                         b,
                         port_b,
+                        open_b,
                         wirefilter,
                         config,
                     } => {
-                        let endp_a = vde::find_endpoint_path(&t, &a, port_a.as_ref()).context(
-                            format!("Finding endpoint path for {} on connection {}", &a, &name),
-                        )?;
-                        let endp_b = vde::find_endpoint_path(&t, &b, port_b.as_ref()).context(
-                            format!("Finding endpoint path for {} on connection {}", &b, &name),
-                        )?;
+                        let endp_a =
+                            vde::find_endpoint_path(&t, &a, port_a.as_ref(), open_a).context(
+                                format!("Finding endpoint path for {} on connection {}", &a, &name),
+                            )?;
+                        let endp_b =
+                            vde::find_endpoint_path(&t, &b, port_b.as_ref(), open_b).context(
+                                format!("Finding endpoint path for {} on connection {}", &b, &name),
+                            )?;
 
-                        let endp_a_prt = vde::find_endpoint_protocol(&t, &a).context(format!(
-                            "Finding endpoint protocol for {} on connection {}",
-                            &a, &name
-                        ))?;
-                        let endp_b_prt = vde::find_endpoint_protocol(&t, &b).context(format!(
-                            "Finding endpoint protocol for {} on connection {}",
-                            &b, &name
-                        ))?;
+                        let open_a = open_a.unwrap_or(false);
+                        let open_b = open_b.unwrap_or(false);
+
+                        let endp_a_proto = if open_a {
+                            VdeConnProtocols::PTP
+                        } else {
+                            vde::find_endpoint_protocol(&t, &a).context(format!(
+                                "Finding endpoint protocol for {} on connection {}",
+                                &a, &name
+                            ))?
+                        };
+
+                        let endp_b_proto = if open_b {
+                            VdeConnProtocols::PTP
+                        } else {
+                            vde::find_endpoint_protocol(&t, &b).context(format!(
+                                "Finding endpoint protocol for {} on connection {}",
+                                &b, &name
+                            ))?
+                        };
                         let mut conn = vde::Cable::new(
                             name,
                             endp_a,
                             port_a,
-                            endp_a_prt,
+                            endp_a_proto,
+                            open_a,
                             endp_b,
                             port_b,
-                            endp_b_prt,
+                            endp_b_proto,
+                            open_b,
                             Some(wirefilter),
                         );
 
@@ -498,39 +523,59 @@ fn config_to_vde_topology(c: config::Config) -> Result<vde::Topology> {
 
     if let Some(conns) = &c.cable {
         for c in conns {
-            let endp_a =
-                vde::find_endpoint_path(&t, &c.endpoint_a.name, c.endpoint_a.port.as_ref())
-                    .context(format!(
-                        "Finding endpoint path for {} on connection {}",
-                        &c.endpoint_a.name, &c.name
-                    ))?;
+            let endp_a = vde::find_endpoint_path(
+                &t,
+                &c.endpoint_a.name,
+                c.endpoint_a.port.as_ref(),
+                c.endpoint_a.open,
+            )
+            .context(format!(
+                "Finding endpoint path for {} on connection {}",
+                &c.endpoint_a.name, &c.name
+            ))?;
             let port_a = c.endpoint_a.port.clone();
-            let endp_b =
-                vde::find_endpoint_path(&t, &c.endpoint_b.name, c.endpoint_b.port.as_ref())
-                    .context(format!(
-                        "Finding endpoint path for {} on connection {}",
-                        &c.endpoint_b.name, &c.name
-                    ))?;
+            let endp_b = vde::find_endpoint_path(
+                &t,
+                &c.endpoint_b.name,
+                c.endpoint_b.port.as_ref(),
+                c.endpoint_b.open,
+            )
+            .context(format!(
+                "Finding endpoint path for {} on connection {}",
+                &c.endpoint_b.name, &c.name
+            ))?;
             let port_b = c.endpoint_b.port.clone();
 
-            let endp_a_prt =
+            let open_a = c.endpoint_a.open.unwrap_or(false);
+            let open_b = c.endpoint_b.open.unwrap_or(false);
+
+            let endp_a_proto = if open_a {
+                VdeConnProtocols::PTP
+            } else {
                 vde::find_endpoint_protocol(&t, &c.endpoint_a.name).context(format!(
                     "Finding endpoint protocol for {} on connection {}",
                     &c.endpoint_a.name, &c.name
-                ))?;
-            let endp_b_prt =
+                ))?
+            };
+            let endp_b_proto = if open_b {
+                VdeConnProtocols::PTP
+            } else {
                 vde::find_endpoint_protocol(&t, &c.endpoint_b.name).context(format!(
                     "Finding endpoint protocol for {} on connection {}",
                     &c.endpoint_b.name, &c.name
-                ))?;
+                ))?
+            };
+
             let mut conn = vde::Cable::new(
                 c.name.clone(),
                 endp_a,
                 port_a,
-                endp_a_prt,
+                endp_a_proto,
+                open_a,
                 endp_b,
                 port_b,
-                endp_b_prt,
+                endp_b_proto,
+                open_b,
                 c.wirefilter,
             );
 

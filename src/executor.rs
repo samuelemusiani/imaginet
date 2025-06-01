@@ -4,6 +4,8 @@ use std::io::Write;
 use std::os::unix::{fs::PermissionsExt, process::CommandExt}; // Used for exec(), and permissions set on the namespace starter script
 use std::{fs, process, thread};
 
+use crate::vde;
+
 const ERR_DEAD_DEVICE: &str = "Device not active";
 
 #[derive(Clone, Debug)]
@@ -116,6 +118,16 @@ pub fn topology_start(opts: Options, devices: Option<Vec<String>>, inline: bool)
 
         init_dir(conn.base_path(&opts.working_dir))
             .context(format!("Initializing base dir for {}", conn.name))?;
+
+        if conn.get_a().get_open() || conn.get_b().get_open() {
+            let tmp = std::path::PathBuf::from(&opts.working_dir)
+                .join(vde::OPEN_DIR_NAME)
+                .to_str()
+                .context("Converting open connections dir to string")?
+                .to_owned();
+
+            init_dir(tmp).context("Creating dir for open connections")?
+        }
 
         if !conn.wirefilter && inline {
             bail!("Can't start cable inline if wirefilter is not specified")
@@ -377,14 +389,36 @@ pub fn topology_status(opts: Options, devices: Option<Vec<String>>, verbose: u8)
         if verbose > 0 {
             let endp_a = conn.get_a();
             let endp_b = conn.get_b();
+
+            let open_a = endp_a.get_open();
+            let open_b = endp_b.get_open();
+
+            let base_path = std::path::PathBuf::from(&opts.working_dir);
+
+            let name_a = endp_a.get_name();
+            let path_a = if open_a {
+                base_path.join(name_a).to_str().unwrap().to_owned()
+            } else {
+                name_a.to_string()
+            }
+            .bold();
+
+            let name_b = endp_b.get_name();
+            let path_b = if open_b {
+                base_path.join(name_b).to_str().unwrap().to_owned()
+            } else {
+                name_b.to_string()
+            }
+            .bold();
+
             println!(
                 "\tendpoint_a: {} {} {}\n\tendpoint_b: {} {} {}\n\twirefilter: {}",
-                endp_a.get_name().bold(),
-                option_to_string(endp_a.get_port()).bold(),
                 endp_a.get_protocol().to_string().bold(),
-                endp_b.get_name().bold(),
-                option_to_string(endp_b.get_port()).bold(),
+                path_a,
+                option_to_string(endp_a.get_port()).bold(),
                 endp_b.get_protocol().to_string().bold(),
+                path_b,
+                option_to_string(endp_b.get_port()).bold(),
                 conn.has_wirefilter().to_string().bold()
             );
         }
