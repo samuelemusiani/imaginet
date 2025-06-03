@@ -62,7 +62,14 @@ enum Commands {
     },
 
     #[command(about = "Stop and delete the current topology")]
-    Clear {},
+    Clear {
+        #[arg(
+            short,
+            long,
+            help = "Force the deletion of the current topology, even if parsing is not possible. Devices could not be stopped"
+        )]
+        force: bool,
+    },
 
     #[command(about = "Dump current raw configuration")]
     Dump {},
@@ -276,8 +283,15 @@ fn main() -> Result<()> {
     match args.command {
         Some(command) => match command {
             Commands::Create { config, force } => topology_create(opts, config, force)?,
-            Commands::Clear {} => {
-                executor::topology_stop(&opts, None)?;
+            Commands::Clear { force } => {
+                let res = executor::topology_stop(&opts, None);
+                if !force {
+                    res?;
+                } else {
+                    if let Err(e) = res {
+                        log::warn!("Error stopping topology: {e}. But continuing anyway. Some devices could not be stopped");
+                    }
+                }
                 executor::clear_topology(&opts)?;
             }
             Commands::Dump {} => {
