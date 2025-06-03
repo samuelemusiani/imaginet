@@ -2,7 +2,6 @@
 
 Bug in wirefilter, si blocca una volta settata la bandwith
 
-Bug in import: non controlla che la config sia giusta e quindi se è sbagliata si spacca tutto
 Bug in clear -> Dovrebbe permette di cancellare la config anche se non funziona il parsing
 
 vde_plug ptp:///path1 ptp:///path2  se si stacca un ptp si chiude il plug. È corretto?

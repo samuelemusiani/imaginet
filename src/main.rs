@@ -468,6 +468,10 @@ fn topology_import(opts: executor::Options, config: String, force: bool) -> Resu
     }
 
     let file = fs::read_to_string(config).context("Reading config file")?;
+
+    // Before writing the configuration we need to check if is valid
+    vde::Topology::from_string(&file).context("Import file is not valid. Maibe use `create`?")?;
+
     executor::write_raw_topology(opts, file).context("Writing topology to file")?;
 
     return Ok(());
