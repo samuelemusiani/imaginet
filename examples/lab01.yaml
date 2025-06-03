@@ -37,8 +37,8 @@
 #
 #  Before switch where invented, there were hubs. Hubs are very simple devices
 #  that forward every frame to every port (except the port it came from). So
-#  if you use a hub instead of a switch you will see every frame in every in
-#  every namespace. You can try this by uncommenting the "hub: true" line in the
+#  if you use a hub instead of a switch you will see every frame in every 
+#  namespace. You can try this by uncommenting the "hub: true" line in the
 #  switch configuration below.
 
 switch:
