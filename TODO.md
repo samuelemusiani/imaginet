@@ -1,5 +1,8 @@
 # TODO
 
+Add eseguibili nella configurazione in modo da poter usare imaginet anche se
+il software non è installato. (Forse basta cambiare il $PATH?)
+
 Bug in wirefilter, si blocca una volta settata la bandwith
 
 vde_plug ptp:///path1 ptp:///path2  se si stacca un ptp si chiude il plug. È corretto?
