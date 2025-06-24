@@ -323,8 +323,6 @@ impl Config {
                         if !used_set.insert(name.clone()) {
                             anyhow::bail!("Slirp {name} is used more than once.");
                         }
-                    } else {
-                        anyhow::bail!("Endpoint {} does not exist", name);
                     }
                 }
             }
