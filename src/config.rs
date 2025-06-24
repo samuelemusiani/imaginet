@@ -54,11 +54,19 @@ pub struct Slirp {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct VXVDE {
+    pub name: String,
+    pub addr: Option<String>,
+    pub port: Option<u16>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     pub switch: Option<Vec<Switch>>,
     pub namespace: Option<Vec<Namespace>>,
     pub cable: Option<Vec<Cable>>,
     pub slirp: Option<Vec<Slirp>>,
+    pub vxvde: Option<Vec<VXVDE>>,
 }
 
 impl Config {
@@ -161,6 +169,19 @@ impl Config {
             // Do some specific slirp checks if some options are found
         }
 
+        log::trace!("Checking vxvde's name uniqueness");
+        if let Some(vxs) = &self.vxvde {
+            for vx in vxs {
+                log::trace!("VXVDE {}", &vx.name);
+                if !set.insert(&vx.name) {
+                    anyhow::bail!("VXVDE name {} is not unique", vx.name);
+                }
+
+                vx.checks()
+                    .context(format!("Checks failed for vxvde {}", vx.name))?;
+            }
+        }
+
         drop(set);
 
         // Endpoints must exist and ports must be valid
@@ -169,6 +190,7 @@ impl Config {
         let mut switches = HashSet::new();
         let mut namespaces = HashSet::new();
         let mut slirps = HashSet::new();
+        let mut vxvdes = HashSet::new();
 
         if let Some(sw) = &self.switch {
             for s in sw {
@@ -224,6 +246,21 @@ impl Config {
             }
         }
 
+        if let Some(vxs) = &self.vxvde {
+            for vx in vxs {
+                vxvdes.insert(&vx.name);
+
+                endpoint_map.insert(
+                    &vx.name,
+                    Endpoint {
+                        name: vx.name.clone(),
+                        port: Some(1.to_string()),
+                        open: Some(false),
+                    },
+                );
+            }
+        }
+
         // To avoid another function we use the endpoint_check closure.
         // This simply checks if the endpoint exists and if the port is valid.
         // based on the map we created before.
@@ -265,7 +302,10 @@ impl Config {
                         "Port {int_port} is out of range for endpoint {name} (max {int_endport} ports){s}"
                     );
                 }
-            } else if namespaces.get(&name).is_some() || slirps.get(&name).is_some() {
+            } else if namespaces.get(&name).is_some()
+                || slirps.get(&name).is_some()
+                || vxvdes.get(&name).is_some()
+            {
                 // The only check is that the port exists here.
                 // Nothing needs to ben done as the previous code already
                 // checked this
@@ -481,6 +521,21 @@ impl Cable {
             }
 
             let _ = std::fs::read_to_string(c).context(format!("Reading config file {}", c))?;
+        }
+
+        Ok(())
+    }
+}
+
+impl VXVDE {
+    fn checks(&self) -> Result<()> {
+        if self.addr.is_none() {
+            bail!("VXVDE {} must have at least an address", self.name);
+        }
+
+        if let Some(addr) = &self.addr {
+            addr.parse::<net::IpAddr>()
+                .context(format!("Invalid VXVDE address: {}", addr))?;
         }
 
         Ok(())

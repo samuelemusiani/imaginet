@@ -5,11 +5,13 @@ pub use namespace::{NSInterface, Namespace};
 use serde::{Deserialize, Serialize};
 pub use slirp::Slirp;
 pub use switch::Switch;
+pub use vxvde::VXVDE;
 
 mod cable;
 mod namespace;
 mod slirp;
 mod switch;
+mod vxvde;
 
 const PID_FILE_NAME: &str = "pid";
 const CONF_FILE_NAME: &str = "config";
@@ -37,6 +39,7 @@ pub struct Topology {
     namespaces: Vec<Namespace>,
     cables: Vec<Cable>,
     slirps: Vec<Slirp>,
+    vxvdes: Vec<VXVDE>,
 }
 
 impl Topology {
@@ -46,6 +49,7 @@ impl Topology {
             namespaces: Vec::new(),
             cables: Vec::new(),
             slirps: Vec::new(),
+            vxvdes: Vec::new(),
         }
     }
 
@@ -70,6 +74,12 @@ impl Topology {
 
         for sl in &self.slirps {
             if sl.get_name() == name {
+                return true;
+            }
+        }
+
+        for vx in &self.vxvdes {
+            if vx.get_name() == name {
                 return true;
             }
         }
@@ -113,6 +123,15 @@ impl Topology {
         Ok(())
     }
 
+    pub fn add_vxvde(&mut self, vx: VXVDE) -> Result<()> {
+        if self.is_name_used(vx.get_name()) {
+            anyhow::bail!("Name already used");
+        }
+        self.vxvdes.push(vx);
+
+        Ok(())
+    }
+
     pub fn get_switches(&self) -> &Vec<Switch> {
         &self.switches
     }
@@ -127,6 +146,10 @@ impl Topology {
 
     pub fn get_slirps(&self) -> &Vec<Slirp> {
         &self.slirps
+    }
+
+    pub fn get_vxvdes(&self) -> &Vec<VXVDE> {
+        &self.vxvdes
     }
 
     pub fn remove_device(&mut self, name: &String) -> Result<()> {
@@ -195,6 +218,12 @@ pub fn find_endpoint_path(
         }
     }
 
+    for vx in t.get_vxvdes() {
+        if vx.get_name() == name {
+            return vx.conn_path(".");
+        }
+    }
+
     // For the namespaces the port must be defined
     let port =
         port.ok_or_else(|| anyhow::anyhow!("Port is not defined and namespaces requires it"))?;
@@ -223,6 +252,12 @@ pub fn find_endpoint_protocol(t: &Topology, name: &str) -> Result<VdeConnProtoco
 
     for s in t.get_slirps() {
         if s.get_name() == name {
+            return Ok(VdeConnProtocols::PTP);
+        }
+    }
+
+    for vx in t.get_vxvdes() {
+        if vx.get_name() == name {
             return Ok(VdeConnProtocols::PTP);
         }
     }

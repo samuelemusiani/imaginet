@@ -1,0 +1,20 @@
+namespace:
+  - name: ns1
+    interfaces:
+      - name: eth0
+
+cable:
+  - name: conn1
+    endpoint_a:
+      name: ns1
+      port: eth0
+    endpoint_b:
+      name: vxvde1
+
+vxvde:
+  - name: vxvde1
+    # Multicast address for vxvde
+    addr: 239.0.0.1
+    port: 14789
+    # TODO: add all the options for vxvde
+

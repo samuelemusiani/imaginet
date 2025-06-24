@@ -154,6 +154,24 @@ pub fn topology_start(opts: Options, devices: Option<Vec<String>>, inline: bool)
         start_slirp(&opts, sl)?;
     }
 
+    log::trace!("Starting VXVDES");
+    for vx in t.get_vxvdes() {
+        if !devices.is_empty() && !devices.contains(&vx.get_name()) {
+            log::trace!("Skipping VXVDE {}", vx.get_name());
+            continue;
+        }
+
+        if pid_path_is_alive(&vx.pid_path(&opts.working_dir))? {
+            log::warn!("VXVDE {} is already started, skipping", vx.get_name());
+            continue;
+        }
+
+        init_dir(vx.base_path(&opts.working_dir))
+            .context(format!("Initializing base dir for {}", vx.get_name()))?;
+
+        start_vxvde(&opts, vx)?;
+    }
+
     if inline {
         thread::sleep(std::time::Duration::new(1, 0));
         topology_attach(opts, devices[0].clone(), true)?;
@@ -246,6 +264,14 @@ fn start_slirp(opts: &Options, slirp: &crate::vde::Slirp) -> Result<()> {
     let args = slirp.exec_args(&opts.working_dir);
 
     exec(&cmd, &args).context(format!("Starting slirp {}", slirp.get_name()))
+}
+
+fn start_vxvde(opts: &Options, vxvde: &crate::vde::VXVDE) -> Result<()> {
+    log::trace!("Starting VXVDE {}", vxvde.get_name());
+    let cmd = vxvde.exec_command();
+    let args = vxvde.exec_args(&opts.working_dir);
+
+    exec(&cmd, &args).context(format!("Starting VXVDE {}", vxvde.get_name()))
 }
 
 fn init(opts: &Options) -> Result<()> {
@@ -476,6 +502,30 @@ pub fn topology_status(opts: Options, devices: Option<Vec<String>>, verbose: u8)
         println!("- {} {}", sl.get_name(), status);
     }
 
+    for vx in t.get_vxvdes() {
+        if let Some(devices) = &devices {
+            if !devices.contains(&vx.get_name().to_owned()) {
+                continue;
+            }
+        }
+
+        let path = vx.pid_path(&opts.working_dir);
+        let status = if pid_path_is_alive(&path)? {
+            "active".green()
+        } else {
+            "inactive".red()
+        };
+
+        println!("- {} {}", vx.get_name(), status);
+        if verbose > 1 {
+            println!(
+                "\taddr: {}\n\tport: {}",
+                option_to_string(vx.get_addr()).bold(),
+                option_to_string(vx.get_port()).bold()
+            );
+        }
+    }
+
     Ok(())
 }
 
@@ -556,6 +606,20 @@ pub fn topology_stop(opts: &Options, devices: Option<Vec<String>>) -> Result<()>
         }
 
         let path = sl.pid_path(&opts.working_dir);
+        if pid_path_is_alive(&path)? {
+            let pid = fs::read_to_string(&path)?.trim().to_owned();
+            process::Command::new("kill").arg(pid).spawn()?;
+        }
+    }
+
+    for vx in t.get_vxvdes() {
+        if let Some(devices) = &devices {
+            if !devices.contains(&vx.get_name().to_owned()) {
+                continue;
+            }
+        }
+
+        let path = vx.pid_path(&opts.working_dir);
         if pid_path_is_alive(&path)? {
             let pid = fs::read_to_string(&path)?.trim().to_owned();
             process::Command::new("kill").arg(pid).spawn()?;

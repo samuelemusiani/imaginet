@@ -202,6 +202,20 @@ enum AddSubcommands {
         /// Name of the slirp. Must be unique in all the topology
         name: String,
     },
+
+    #[command(about = "Add a VXVDE connection to the current topology")]
+    VXVDE {
+        /// Name of the vxvde. Must be unique in all the topology
+        name: String,
+
+        /// Address of the vxvde connection
+        #[arg(short, long, help = "Address of the vxvde connection")]
+        addr: Option<String>,
+
+        /// Port of the vxvde connection
+        #[arg(short, long, help = "Port of the vxvde connection")]
+        port: Option<u16>,
+    },
 }
 
 #[derive(serde::Deserialize)]
@@ -425,6 +439,17 @@ fn main() -> Result<()> {
                         let s = vde::Slirp::new(name);
                         t.add_slirp(s).context("Adding slirp to topology")?;
                     }
+                    AddSubcommands::VXVDE { name, addr, port } => {
+                        let mut vx = vde::VXVDE::new(name);
+                        if let Some(addr) = addr {
+                            vx.set_addr(addr);
+                        }
+                        if let Some(port) = port {
+                            vx.set_port(port);
+                        }
+
+                        t.add_vxvde(vx).context("Adding vxvde to topology")?;
+                    }
                 }
 
                 executor::write_topology(opts.clone(), t).context("Writing topology")?;
@@ -554,6 +579,21 @@ fn config_to_vde_topology(c: config::Config) -> Result<vde::Topology> {
             log::debug!("Parsing slirp {}", s.name);
             let s = vde::Slirp::new(s.name.clone());
             t.add_slirp(s).context("Adding slirp to topology")?;
+        }
+    }
+
+    if let Some(vxvdes) = &c.vxvde {
+        for v in vxvdes {
+            log::debug!("Parsing vxvde {}", v.name);
+            let mut vx = vde::VXVDE::new(v.name.clone());
+            if let Some(addr) = &v.addr {
+                vx.set_addr(addr.clone());
+            }
+            if let Some(port) = v.port {
+                vx.set_port(port);
+            }
+
+            t.add_vxvde(vx).context("Adding vxvde to topology")?;
         }
     }
 
