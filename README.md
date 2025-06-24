@@ -2,8 +2,8 @@
 
 A command line tool to configure and manage complex VDE network topologies.
 
-ImagiNet is a *network software emulator* that leverages **VDE** (Virtual Distributed 
-Internet) for the emulations. It's like GNS3 or PacketTracer but without the GUI 
+ImagiNet is a *network software simulator* that leverages **VDE** (Virtual Distributed 
+Internet). It's like GNS3 or PacketTracer but without the GUI 
 and more limited functionalities.
 
 This project was designed with the intent of helping teach the basics of 
