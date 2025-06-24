@@ -49,6 +49,9 @@ The executable will be in `target/release/`.
 > In order to make the `exec` command works for namespaces, you must also install 
 > the `nsenter` program present in the `util-linux` package. `nsenter` must be
 > at minimum version 2.40, but it is recommended to use the latest version available
+>
+> In order to use `slirp`, you must install the [libvdeslirp](https://github.com/virtualsquare/libvdeslirp) 
+> library.
 
 ImagiNet provides a very helpful command line interface. Simply run:
 ```
