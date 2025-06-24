@@ -10,6 +10,10 @@ const DEFAULT_SWITCH_PORTS: u32 = 32;
 pub struct Endpoint {
     pub name: String,
     pub port: Option<String>,
+    // This field is used to indicate if the endpoint is open or not.
+    // An open endpoint is one that is not connected to a device present
+    // in the VDE topology file, but it creates a PTP connection that can
+    // be manually used to connect external devices.
     pub open: Option<bool>,
 }
 
@@ -44,8 +48,9 @@ pub struct Cable {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Open {
+pub struct Slirp {
     pub name: String,
+    // I can't find a manual that lists configuration options
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -53,7 +58,7 @@ pub struct Config {
     pub switch: Option<Vec<Switch>>,
     pub namespace: Option<Vec<Namespace>>,
     pub cable: Option<Vec<Cable>>,
-    pub open: Option<Vec<Open>>,
+    pub slirp: Option<Vec<Slirp>>,
 }
 
 impl Config {
@@ -144,6 +149,18 @@ impl Config {
             }
         }
 
+        log::trace!("Checking slirp's name uniqueness");
+        if let Some(slirps) = &self.slirp {
+            for s in slirps {
+                log::trace!("Slirp {}", &s.name);
+                if !set.insert(&s.name) {
+                    anyhow::bail!("Slirp name {} is not unique", s.name);
+                }
+            }
+
+            // Do some specific slirp checks if some options are found
+        }
+
         drop(set);
 
         // Endpoints must exist and ports must be valid
@@ -151,6 +168,7 @@ impl Config {
         let mut endpoint_map = HashMap::new();
         let mut switches = HashSet::new();
         let mut namespaces = HashSet::new();
+        let mut slirps = HashSet::new();
 
         if let Some(sw) = &self.switch {
             for s in sw {
@@ -188,6 +206,21 @@ impl Config {
                         },
                     );
                 }
+            }
+        }
+
+        if let Some(sls) = &self.slirp {
+            for s in sls {
+                slirps.insert(&s.name);
+
+                endpoint_map.insert(
+                    &s.name,
+                    Endpoint {
+                        name: s.name.clone(),
+                        port: Some(1.to_string()),
+                        open: Some(false),
+                    },
+                );
             }
         }
 
@@ -232,7 +265,7 @@ impl Config {
                         "Port {int_port} is out of range for endpoint {name} (max {int_endport} ports){s}"
                     );
                 }
-            } else if namespaces.get(&name).is_some() {
+            } else if namespaces.get(&name).is_some() || slirps.get(&name).is_some() {
                 // The only check is that the port exists here.
                 // Nothing needs to ben done as the previous code already
                 // checked this
@@ -286,6 +319,12 @@ impl Config {
                                 )
                             }
                         }
+                    } else if slirps.get(name).is_some() {
+                        if !used_set.insert(name.clone()) {
+                            anyhow::bail!("Slirp {name} is used more than once.");
+                        }
+                    } else {
+                        anyhow::bail!("Endpoint {} does not exist", name);
                     }
                 }
             }

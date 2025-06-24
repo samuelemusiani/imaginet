@@ -136,6 +136,24 @@ pub fn topology_start(opts: Options, devices: Option<Vec<String>>, inline: bool)
         start_cable(&opts, conn)?;
     }
 
+    log::trace!("Starting slirps");
+    for sl in t.get_slirps() {
+        if !devices.is_empty() && !devices.contains(&sl.get_name()) {
+            log::trace!("Skipping slirp {}", sl.get_name());
+            continue;
+        }
+
+        if pid_path_is_alive(&sl.pid_path(&opts.working_dir))? {
+            log::warn!("Slirp {} is already started, skipping", sl.get_name());
+            continue;
+        }
+
+        init_dir(sl.base_path(&opts.working_dir))
+            .context(format!("Initializing base dir for {}", sl.get_name()))?;
+
+        start_slirp(&opts, sl)?;
+    }
+
     if inline {
         thread::sleep(std::time::Duration::new(1, 0));
         topology_attach(opts, devices[0].clone(), true)?;
@@ -220,6 +238,14 @@ fn start_cable(opts: &Options, cable: &crate::vde::Cable) -> Result<()> {
     }
 
     exec(&cmd, &args).context(format!("Starting cable {}", cable.name))
+}
+
+fn start_slirp(opts: &Options, slirp: &crate::vde::Slirp) -> Result<()> {
+    log::trace!("Starting slirp {}", slirp.get_name());
+    let cmd = slirp.exec_command();
+    let args = slirp.exec_args(&opts.working_dir);
+
+    exec(&cmd, &args).context(format!("Starting slirp {}", slirp.get_name()))
 }
 
 fn init(opts: &Options) -> Result<()> {
@@ -431,6 +457,25 @@ pub fn topology_status(opts: Options, devices: Option<Vec<String>>, verbose: u8)
         }
     }
 
+    println!("\n{}:", "Slirps".bold());
+
+    for sl in t.get_slirps() {
+        if let Some(devices) = &devices {
+            if !devices.contains(&sl.get_name().to_owned()) {
+                continue;
+            }
+        }
+
+        let path = sl.pid_path(&opts.working_dir);
+        let status = if pid_path_is_alive(&path)? {
+            "active".green()
+        } else {
+            "inactive".red()
+        };
+
+        println!("- {} {}", sl.get_name(), status);
+    }
+
     Ok(())
 }
 
@@ -497,6 +542,20 @@ pub fn topology_stop(opts: &Options, devices: Option<Vec<String>>) -> Result<()>
         }
 
         let path = conn.pid_path(&opts.working_dir);
+        if pid_path_is_alive(&path)? {
+            let pid = fs::read_to_string(&path)?.trim().to_owned();
+            process::Command::new("kill").arg(pid).spawn()?;
+        }
+    }
+
+    for sl in t.get_slirps() {
+        if let Some(devices) = &devices {
+            if !devices.contains(&sl.get_name().to_owned()) {
+                continue;
+            }
+        }
+
+        let path = sl.pid_path(&opts.working_dir);
         if pid_path_is_alive(&path)? {
             let pid = fs::read_to_string(&path)?.trim().to_owned();
             process::Command::new("kill").arg(pid).spawn()?;
@@ -591,6 +650,14 @@ pub fn topology_attach(opts: Options, device: String, inline: bool) -> Result<()
         return Ok(());
     }
 
+    for sl in t.get_slirps() {
+        if sl.get_name() != &device {
+            continue;
+        }
+
+        return Err(anyhow!("Slirps do not support attach commands"));
+    }
+
     Err(anyhow!("Device not found"))
 }
 
@@ -651,6 +718,14 @@ pub fn topology_exec(opts: Options, device: String, command: Vec<String>) -> Res
 
         exec_inline(&cmd, &args).context("Executing command inside cable")?;
         return Ok(());
+    }
+
+    for sl in t.get_slirps() {
+        if sl.get_name() != &device {
+            continue;
+        }
+
+        return Err(anyhow!("Slirps do not support exec commands"));
     }
 
     Err(anyhow!("Device not found"))

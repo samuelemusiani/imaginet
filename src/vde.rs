@@ -3,10 +3,12 @@ pub use cable::Cable;
 use core::fmt;
 pub use namespace::{NSInterface, Namespace};
 use serde::{Deserialize, Serialize};
+pub use slirp::Slirp;
 pub use switch::Switch;
 
 mod cable;
 mod namespace;
+mod slirp;
 mod switch;
 
 const PID_FILE_NAME: &str = "pid";
@@ -34,6 +36,7 @@ pub struct Topology {
     switches: Vec<Switch>,
     namespaces: Vec<Namespace>,
     cables: Vec<Cable>,
+    slirps: Vec<Slirp>,
 }
 
 impl Topology {
@@ -42,6 +45,7 @@ impl Topology {
             switches: Vec::new(),
             namespaces: Vec::new(),
             cables: Vec::new(),
+            slirps: Vec::new(),
         }
     }
 
@@ -60,6 +64,12 @@ impl Topology {
 
         for con in &self.cables {
             if con.get_name() == name {
+                return true;
+            }
+        }
+
+        for sl in &self.slirps {
+            if sl.get_name() == name {
                 return true;
             }
         }
@@ -94,6 +104,15 @@ impl Topology {
         Ok(())
     }
 
+    pub fn add_slirp(&mut self, s: Slirp) -> Result<()> {
+        if self.is_name_used(s.get_name()) {
+            anyhow::bail!("Name already used");
+        }
+        self.slirps.push(s);
+
+        Ok(())
+    }
+
     pub fn get_switches(&self) -> &Vec<Switch> {
         &self.switches
     }
@@ -104,6 +123,10 @@ impl Topology {
 
     pub fn get_cables(&self) -> &Vec<Cable> {
         &self.cables
+    }
+
+    pub fn get_slirps(&self) -> &Vec<Slirp> {
+        &self.slirps
     }
 
     pub fn remove_device(&mut self, name: &String) -> Result<()> {
@@ -166,6 +189,12 @@ pub fn find_endpoint_path(
         }
     }
 
+    for sl in t.get_slirps() {
+        if sl.get_name() == name {
+            return sl.conn_path(".");
+        }
+    }
+
     // For the namespaces the port must be defined
     let port =
         port.ok_or_else(|| anyhow::anyhow!("Port is not defined and namespaces requires it"))?;
@@ -188,6 +217,12 @@ pub fn find_endpoint_protocol(t: &Topology, name: &str) -> Result<VdeConnProtoco
 
     for ns in t.get_namespaces() {
         if ns.get_name() == name {
+            return Ok(VdeConnProtocols::PTP);
+        }
+    }
+
+    for s in t.get_slirps() {
+        if s.get_name() == name {
             return Ok(VdeConnProtocols::PTP);
         }
     }

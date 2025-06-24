@@ -196,6 +196,12 @@ enum AddSubcommands {
         )]
         config: Option<String>,
     },
+
+    #[command(about = "Add a slirp connection to the current topology")]
+    Slirp {
+        /// Name of the slirp. Must be unique in all the topology
+        name: String,
+    },
 }
 
 #[derive(serde::Deserialize)]
@@ -415,6 +421,10 @@ fn main() -> Result<()> {
 
                         t.add_cable(conn).context("Adding cable to topology")?;
                     }
+                    AddSubcommands::Slirp { name } => {
+                        let s = vde::Slirp::new(name);
+                        t.add_slirp(s).context("Adding slirp to topology")?;
+                    }
                 }
 
                 executor::write_topology(opts.clone(), t).context("Writing topology")?;
@@ -536,6 +546,14 @@ fn config_to_vde_topology(c: config::Config) -> Result<vde::Topology> {
                 n.add_config(c);
             }
             t.add_namespace(n).context("Adding namespace to topology")?;
+        }
+    }
+
+    if let Some(sls) = &c.slirp {
+        for s in sls {
+            log::debug!("Parsing slirp {}", s.name);
+            let s = vde::Slirp::new(s.name.clone());
+            t.add_slirp(s).context("Adding slirp to topology")?;
         }
     }
 

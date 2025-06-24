@@ -1,0 +1,15 @@
+namespace:
+  - name: ns1
+    interfaces:
+      - name: eth0
+
+cable:
+  - name: conn1
+    endpoint_a:
+      name: ns1
+      port: eth0
+    endpoint_b:
+      name: slirp1
+
+slirp:
+  - name: slirp1

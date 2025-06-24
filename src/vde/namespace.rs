@@ -21,8 +21,8 @@ pub struct NSInterface {
 }
 
 impl Namespace {
-    pub fn new(name: String) -> Namespace {
-        Namespace {
+    pub fn new(name: String) -> Self {
+        Self {
             name,
             interfaces: Vec::new(),
             config: Vec::new(),

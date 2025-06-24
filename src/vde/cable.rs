@@ -17,7 +17,10 @@ pub struct Endpoint {
     name: String,
     port: Option<String>,
     protocol: VdeConnProtocols,
-    /// Open flag to indicate if the endpoint is "open".
+    /// This field is used to indicate if the endpoint is open or not.
+    /// An open endpoint is one that is not connected to a device present
+    /// in the VDE topology file, but it creates a PTP connection that can
+    /// be manually used to connect external devices.
     open: bool,
 }
 
