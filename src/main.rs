@@ -308,7 +308,9 @@ fn main() -> Result<()> {
 
     match args.command {
         Some(command) => match command {
-            Commands::Create { config, force } => topology_create(opts, config, force)?,
+            Commands::Create { config, force } => {
+                topology_create(opts, config, force).context("Creating topology")?
+            }
             Commands::Clear { force } => {
                 let res = executor::topology_stop(&opts, None);
                 if !force {
@@ -491,7 +493,9 @@ fn topology_create(opts: executor::Options, config: Option<String>, force: bool)
 
     let t;
     if let Some(config) = config {
-        let file = fs::read_to_string(&config).context("Reading config file")?;
+        log::debug!("Reading config at {config}");
+        let file =
+            fs::read_to_string(&config).context(format!("Reading config file at {config}"))?;
 
         let mut relative_path = PathBuf::from_str(&config)
             .context("Converting config path provided to a valid path")?;

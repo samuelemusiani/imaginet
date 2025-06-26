@@ -398,6 +398,7 @@ impl Switch {
         }
 
         if let Some(c) = &self.config {
+            log::trace!("Reading config file {c}");
             let _ = std::fs::read_to_string(c).context(format!("Reading config file {}", c))?;
         }
 
