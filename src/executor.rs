@@ -333,7 +333,7 @@ fn exec_inline(cmd: &str, args: &Vec<String>) -> Result<()> {
     ))
 }
 
-pub fn write_topology(opts: Options, t: crate::vde::Topology) -> Result<()> {
+pub fn write_topology(opts: Options, t: &crate::vde::Topology) -> Result<()> {
     init(&opts).context("Initializing executor")?;
 
     write_raw_topology(
@@ -352,12 +352,35 @@ pub fn write_raw_topology(opts: Options, t: String) -> Result<()> {
 }
 
 /// If None is provided as devices, all devices are printed in the status
-pub fn topology_status(opts: Options, devices: Option<Vec<String>>, verbose: u8) -> Result<()> {
+pub fn topology_status(
+    opts: Options,
+    devices: Option<Vec<String>>,
+    verbose: u8,
+    count: bool,
+) -> Result<()> {
     let t = get_topology(&opts).context("Gettin topology")?;
 
+    let nss = t.get_namespaces();
+    let sws = t.get_switches();
+    let cbs = t.get_cables();
+    let slirps = t.get_slirps();
+    let vxvdes = t.get_vxvdes();
+
     println!("{}", "Topology status".bold());
+
+    if count {
+        println!("Summary:");
+        println!("\tNamespaces:\t{}", nss.len());
+        println!("\tSwitches:\t{}", sws.len());
+        println!("\tCables:\t\t{}", cbs.len());
+        println!("\tSlirps:\t\t{}", slirps.len());
+        println!("\tVXVDEs:\t\t{}", vxvdes.len());
+
+        return Ok(());
+    }
+
     println!("{}:", "Namespaces".bold());
-    for n in t.get_namespaces() {
+    for n in nss {
         if let Some(devices) = &devices {
             if !devices.contains(&n.get_name().to_owned()) {
                 continue;
@@ -391,7 +414,7 @@ pub fn topology_status(opts: Options, devices: Option<Vec<String>>, verbose: u8)
 
     println!("\n{}:", "Switches".bold());
 
-    for s in t.get_switches() {
+    for s in sws {
         if let Some(devices) = &devices {
             if !devices.contains(&s.get_name().to_owned()) {
                 continue;
@@ -424,7 +447,7 @@ pub fn topology_status(opts: Options, devices: Option<Vec<String>>, verbose: u8)
 
     println!("\n{}:", "Cables".bold());
 
-    for conn in t.get_cables() {
+    for conn in cbs {
         if let Some(devices) = &devices {
             if !devices.contains(&conn.name) {
                 continue;
@@ -484,8 +507,7 @@ pub fn topology_status(opts: Options, devices: Option<Vec<String>>, verbose: u8)
     }
 
     println!("\n{}:", "Slirps".bold());
-
-    for sl in t.get_slirps() {
+    for sl in slirps {
         if let Some(devices) = &devices {
             if !devices.contains(&sl.get_name().to_owned()) {
                 continue;
@@ -502,7 +524,8 @@ pub fn topology_status(opts: Options, devices: Option<Vec<String>>, verbose: u8)
         println!("- {} {}", sl.get_name(), status);
     }
 
-    for vx in t.get_vxvdes() {
+    println!("\n{}:", "VXDEs".bold());
+    for vx in vxvdes {
         if let Some(devices) = &devices {
             if !devices.contains(&vx.get_name().to_owned()) {
                 continue;

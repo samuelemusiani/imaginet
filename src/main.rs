@@ -59,6 +59,9 @@ enum Commands {
             help = "Force the creation of a new topology, deleting the current one"
         )]
         force: bool,
+
+        #[arg(short, long, help = "Print a summary of created devices")]
+        summary: bool,
     },
 
     #[command(about = "Stop and delete the current topology")]
@@ -124,6 +127,9 @@ pass only a single device "#
 
         #[arg(short, long, action = clap::ArgAction::Count, help = "Verbosity level. Can be used multiple times for increased verbosity")]
         verbose: u8,
+
+        #[arg(short, long, help = "Print the quantity of each type of device")]
+        count: bool,
     },
 
     #[command(about = "Stop devices in the current topology")]
@@ -308,9 +314,11 @@ fn main() -> Result<()> {
 
     match args.command {
         Some(command) => match command {
-            Commands::Create { config, force } => {
-                topology_create(opts, config, force).context("Creating topology")?
-            }
+            Commands::Create {
+                config,
+                force,
+                summary,
+            } => topology_create(opts, config, force, summary).context("Creating topology")?,
             Commands::Clear { force } => {
                 let res = executor::topology_stop(&opts, None);
                 if !force {
@@ -331,9 +339,11 @@ fn main() -> Result<()> {
             }
             Commands::Import { config, force } => topology_import(opts, config, force)?,
             Commands::Start { devices, inline } => executor::topology_start(opts, devices, inline)?,
-            Commands::Status { devices, verbose } => {
-                executor::topology_status(opts, devices, verbose)?
-            }
+            Commands::Status {
+                devices,
+                verbose,
+                count,
+            } => executor::topology_status(opts, devices, verbose, count)?,
             Commands::Stop { devices } => executor::topology_stop(&opts, devices)?,
             Commands::Attach { device, inline } => executor::topology_attach(opts, device, inline)?,
             Commands::Exec { device, command } => executor::topology_exec(opts, device, command)?,
@@ -460,7 +470,7 @@ fn main() -> Result<()> {
                     }
                 }
 
-                executor::write_topology(opts.clone(), t).context("Writing topology")?;
+                executor::write_topology(opts.clone(), &t).context("Writing topology")?;
             }
             Commands::Rm { device } => {
                 executor::topology_stop(&opts, Some(vec![device.clone()]))?;
@@ -468,7 +478,7 @@ fn main() -> Result<()> {
                 let mut t = executor::get_topology(&opts).context("Getting topology")?;
                 t.remove_device(&device)
                     .context("Removing device from topology")?;
-                executor::write_topology(opts.clone(), t).context("Writing topology")?;
+                executor::write_topology(opts.clone(), &t).context("Writing topology")?;
             }
         },
         None => {
@@ -480,7 +490,12 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn topology_create(opts: executor::Options, config: Option<String>, force: bool) -> Result<()> {
+fn topology_create(
+    opts: executor::Options,
+    config: Option<String>,
+    force: bool,
+    summary: bool,
+) -> Result<()> {
     if executor::topology_exists(&opts) {
         if !force {
             println!("Topology already exists. Use --force to overwrite or the clear command");
@@ -508,9 +523,17 @@ fn topology_create(opts: executor::Options, config: Option<String>, force: bool)
         t = vde::Topology::new();
     }
 
-    executor::write_topology(opts.clone(), t).context("Writing topology")?;
+    executor::write_topology(opts.clone(), &t).context("Writing topology")?;
 
     println!("Topology created");
+    if summary {
+        println!("Summary:");
+        println!("\tNamespaces:\t{}", &t.get_namespaces().len());
+        println!("\tSwitches:\t{}", &t.get_switches().len());
+        println!("\tCables:\t\t{}", &t.get_cables().len());
+        println!("\tSlirps:\t\t{}", &t.get_slirps().len());
+        println!("\tVXVDEs:\t\t{}", &t.get_vxvdes().len());
+    }
 
     Ok(())
 }
