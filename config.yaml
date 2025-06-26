@@ -3,3 +3,10 @@
 terminal:
   executable: /usr/bin/foot
   args: []
+
+# Directory in which ImagiNet will save all his state files.
+# !IMPORTANT!: Please not that the `clear` command will remove this directory,
+# if you accidentally write a path that links to an important directory it will
+# be deleted. Always be shure that the directory pointed by this path does not
+# exist or is not important.
+base_directory: /tmp/imnet

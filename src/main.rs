@@ -229,11 +229,15 @@ struct Terminal {
 #[derive(serde::Deserialize)]
 struct Config {
     terminal: Option<Terminal>,
+    base_directory: Option<String>,
 }
 
 impl Config {
     fn new() -> Self {
-        Config { terminal: None }
+        Config {
+            terminal: None,
+            base_directory: None,
+        }
     }
 
     fn from_string(file: &str) -> Result<Config> {
@@ -295,6 +299,8 @@ fn main() -> Result<()> {
         // Working directory for all the imaginet files
         working_dir: if let Some(dir) = args.base_dir {
             dir
+        } else if let Some(base_dir) = &conf.base_directory {
+            base_dir.clone()
         } else {
             "/tmp/imnet".to_owned()
         },
