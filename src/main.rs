@@ -603,6 +603,9 @@ fn config_to_vde_topology(c: config::Config) -> Result<vde::Topology> {
             for c in n.config_for_interfaces() {
                 n.add_config(c);
             }
+            for c in &ns.commands {
+                n.add_config(c.clone());
+            }
             t.add_namespace(n).context("Adding namespace to topology")?;
         }
     }
