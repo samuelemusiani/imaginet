@@ -67,8 +67,8 @@ impl Namespace {
             let ip = el.get_ip();
             if let Some(ip) = ip {
                 v.push(format!("ip addr add {} dev {}", ip, interface_name));
+                v.push(format!("ip link set {} up", interface_name));
             }
-            v.push(format!("ip link set {} up", interface_name));
 
             if let Some(gt) = &el.gateway {
                 v.push(format!(
